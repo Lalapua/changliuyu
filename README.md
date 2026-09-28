@@ -110,6 +110,17 @@ npx serve .
 
 ## 四、部署
 
+> **当前线上地址**：<https://lalapua.github.io/changliuyu/> —— 托管在 GitHub Pages，源为 `main` 分支根目录。
+
+### GitHub Pages（本项目当前用的方式）
+
+1. Settings → Pages → Source 选 `Deploy from a branch`，Branch 选 `main` + `/ (root)`；
+2. 等一两分钟，访问 `https://<用户名>.github.io/<仓库名>/`。
+
+仓库根目录有一个空的 **`.nojekyll`**：GitHub Pages 默认会拿 Jekyll 过一遍站点，我们的文件虽然不以下划线开头、不会被吞，但关掉它更省心，也避免以后加了带下划线的目录被静默忽略。
+
+> 项目里所有资源路径都是相对路径，并且 `js/config.js` 会用当前脚本的 `src` 反推站点根目录，所以部署在**子路径**（如 GitHub Pages 的 `/仓库名/`）下也能正常工作，不需要改任何配置。这一点已经在线上实测过：首页两张模块卡的 `href` 会正确解析成 `…/changliuyu/tests/index.html`。
+
 ### Vercel
 
 1. 把整个目录推到 GitHub；
@@ -123,14 +134,6 @@ npx serve .
 
 - **拖拽部署**：打开 <https://app.netlify.com/drop>，把整个项目文件夹拖进去，几秒钟就拿到网址。
 - **Git 部署**：连仓库，Build command 留空，Publish directory 填 `.`。
-
-### GitHub Pages
-
-1. 推送到仓库；
-2. Settings → Pages → Source 选 `Deploy from a branch`，Branch 选 `main` + `/ (root)`；
-3. 等一两分钟，访问 `https://<用户名>.github.io/<仓库名>/`。
-
-> 项目里所有资源路径都是相对路径，并且 `js/config.js` 会用当前脚本的 `src` 反推站点根目录，所以部署在**子路径**（如 GitHub Pages 的 `/仓库名/`）下也能正常工作，不需要改任何配置。
 
 ### 其它
 
