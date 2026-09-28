@@ -1,0 +1,8 @@
+# 全站是纯文本源码，统一按 LF 存进仓库，避免 Windows 上 CRLF 造成满屏 diff。
+# 但 .bat / .cmd 例外，Windows 脚本必须是 CRLF。
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.bat text eol=crlf
+*.cmd text eol=crlf

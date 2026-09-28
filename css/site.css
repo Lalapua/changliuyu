@@ -1,0 +1,281 @@
+/* ============================================================
+ * 长留玉 · 首页 + 模块列表页样式
+ * ------------------------------------------------------------
+ * 这一份从 career.css 拆出来，原因：
+ *   - 原来 career.css 顶部那一段「首页主视觉 + 测试卡片」
+ *     其实只被 index.html（首页）用到，career/ 下的页面完全不需要；
+ *   - 现在站点变成「首页 → 模块列表页 → 条目 → 结果页」三级结构，
+ *     首页负责渲染模块卡片，模块列表页（tests/index.html、games/index.html）
+ *     负责渲染条目卡片，两者共用一套视觉语言，放在同一份文件里更好维护；
+ *   - career.css 回归「职业测试内部页面」的专属样式，职责更单一。
+ *
+ * 颜色 / 圆角 / 间距 / 动效一律走 global.css 的 :root 变量，这里不写死。
+ *
+ * 目录：
+ *   1. 首页主视觉（从 career.css 原样搬来）
+ *   2. 模块卡片（首页用，class 前缀 mod-card）
+ *   3. 条目卡片（模块列表页用，class 前缀 item-card，原 test-card 改名而来）
+ *   4. 模块列表页头部（module-hero）
+ * ============================================================ */
+
+/* ============================================================
+ * 1. 首页主视觉 + 说明块（原 career.css「1. 首页」段，原样搬来）
+ * ============================================================ */
+
+/* 首页整体是个居中竖排的主视觉块 */
+.home-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2) 0 var(--sp-1);
+}
+/* 中文品牌名：降级成右上角一枚极小的落款。
+ * 低对比 + 宽字距，只保留「存在感」，不参与主视觉的抢视线。 */
+.home-hero__seal {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.4em;
+  color: var(--text-3);
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}
+.home-hero__ip {
+  /* logo 自带的柔光已经在 .clj-ip::before 里，这里只负责位置 */
+  position: relative;
+  margin-bottom: var(--sp-1);
+}
+/* 英文（拼音）主标题：细字重 + 超大字距 + 银白→淡紫→冰蓝的冷调渐变。
+ * text-indent 与 letter-spacing 等值，用来抵消末字后多出来的那份字距，
+ * 否则视觉上整行会偏左半个字距。 */
+.home-hero__wordmark {
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+  text-transform: uppercase;
+  background: linear-gradient(104deg, #F5F5F7 0%, #C6BDF6 46%, #8FD9EA 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+/* 细分隔线 + 正中一颗菱形小点，把字标和 slogan 分层 */
+.home-hero__rule {
+  position: relative;
+  width: 112px;
+  height: 1px;
+  margin: 2px 0;
+  background: linear-gradient(90deg, transparent,
+              var(--border-strong) 24%, var(--border-strong) 76%, transparent);
+}
+.home-hero__rule::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: var(--accent-3);
+  box-shadow: 0 0 10px rgba(167, 139, 250, 0.85);
+}
+.home-hero__sub {
+  font-size: 13px;
+  color: var(--text-2);
+  max-width: 21em;
+  line-height: 1.8;
+}
+/* 极窄屏（<360px）收一点字距，避免字标换行 */
+@media (max-width: 359px) {
+  .home-hero__wordmark {
+    font-size: 18px;
+    letter-spacing: 0.32em;
+    text-indent: 0.32em;
+  }
+}
+
+/* ============================================================
+ * 2. 模块卡片（首页用，渲染 MODULES 列表）
+ * ------------------------------------------------------------
+ * 视觉语言沿用原来的 .test-card：顶部 2px 渐变强调线、:active 轻微缩放、
+ * .is-soon 降透明度。因为现在是「模块级」标题，名字比原来的 test-card 大一点。
+ * 卡片本体靠 global.css 的 .card 提供底色/边框/圆角，这里只补模块专属的部分。
+ * ============================================================ */
+.mod-card {
+  position: relative;       /* 兜底一次，保证 ::before 顶部强调线定位正确 */
+  display: block;
+  overflow: hidden;
+  padding: var(--sp-3);
+  transition: transform var(--dur) var(--ease);
+}
+/* 顶部强调线：浅色→透明渐变，和原 .test-card::before 同一个配方 */
+.mod-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-3), transparent);
+  opacity: 0.9;
+}
+.mod-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+/* 小号全大写英文模块名，字距拉开，弱化存在感 */
+.mod-card__en {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+/* 小胶囊徽标，复用 .chip 的观感，但字号收到 11px */
+.mod-card__badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent-3);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+/* 模块级标题，比条目卡的名字大一圈 */
+.mod-card__name {
+  margin-top: var(--sp-1);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.mod-card__intro {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.7;
+}
+/* cta 与原 .test-card__cta 同款：accent-3 小字 + 箭头 */
+.mod-card__cta {
+  margin-top: var(--sp-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-3);
+}
+.mod-card__arrow { transition: transform var(--dur) var(--ease); }
+.mod-card:active { transform: scale(0.985); }
+.mod-card:active .mod-card__arrow { transform: translateX(4px); }
+.mod-card.is-soon { opacity: 0.62; }
+.mod-card.is-soon::before { background: linear-gradient(90deg, var(--text-3), transparent); }
+
+/* ============================================================
+ * 3. 条目卡片（模块列表页用，class 前缀 item-card）
+ * ------------------------------------------------------------
+ * 由 js/module.js 渲染，结构与原来的 .test-card 完全一致（head + meta + cta），
+ * 只是把 test-card 改名为 item-card —— 它现在是小游戏 / 测试共用的「条目卡」，
+ * 不再只是测试卡。改名前已 grep 确认全项目再无其它地方引用 .test-card。
+ * ============================================================ */
+.item-card {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.item-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-3), transparent);
+  opacity: 0.9;
+}
+.item-card:active { transform: scale(0.985); }
+.item-card.is-soon { opacity: 0.62; }
+.item-card.is-soon::before { background: linear-gradient(90deg, var(--text-3), transparent); }
+
+.item-card__head { display: flex; align-items: flex-start; gap: var(--sp-2); }
+.item-card__name { font-size: 18px; font-weight: 700; line-height: 1.35; }
+.item-card__intro { margin-top: 6px; font-size: 13px; color: var(--text-2); line-height: 1.7; }
+.item-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-2);
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--border);
+}
+.item-card__meta-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); }
+.item-card__meta-item strong { color: var(--text); font-weight: 600; }
+.item-card__cta {
+  margin-top: var(--sp-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-3);
+}
+.item-card__arrow { transition: transform var(--dur) var(--ease); }
+.item-card:active .item-card__arrow { transform: translateX(4px); }
+
+/* ============================================================
+ * 4. 模块列表页头部（module-hero）
+ * ------------------------------------------------------------
+ * 出现在 tests/index.html 与 games/index.html，结构类似 .home-hero 但
+ * 左对齐、更克制：返回链接 + 品牌标识 + 英文 eyebrow + 大标题 + 简介。
+ * ============================================================ */
+.module-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-1);
+  padding: var(--sp-2) 0 var(--sp-1);
+}
+/* 返回首页的小链接，hover 由弱化色变回正常文字色 */
+.module-hero__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-3);
+  transition: color var(--dur-fast) var(--ease);
+}
+.module-hero__back:hover { color: var(--text); }
+/* 品牌标识位，复用 data-clj-logo 注入的 logo 图 */
+.module-hero__mark {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.module-hero__mark .clj-logo { width: 100%; height: 100%; display: block; object-fit: contain; }
+.module-hero__mark.is-fallback {
+  background: linear-gradient(140deg, var(--accent), var(--cyan));
+}
+.module-hero__title { font-size: 30px; font-weight: 800; line-height: 1.25; letter-spacing: -0.01em; }
+.module-hero__intro {
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: var(--text-2);
+  line-height: 1.75;
+  max-width: 30em;
+}

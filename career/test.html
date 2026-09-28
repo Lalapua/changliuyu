@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#0B0B0F">
+  <meta name="description" content="你适合什么样的职业 · 答题页。仅供娱乐，不构成专业建议。">
+  <title>答题中｜长留玉</title>
+
+  <link rel="icon" href="../assets/ip.png">
+  <link rel="apple-touch-icon" href="../assets/ip.png">
+
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/career.css">
+</head>
+<body>
+
+  <div class="app">
+
+    <!-- 顶部：返回 + 品牌 + 版本标记 -->
+    <div class="quiz-top">
+      <a class="quiz-top__back" href="index.html">
+        <span aria-hidden="true">←</span> 返回
+      </a>
+      <span class="brand">
+        <span class="brand__mark" data-clj-logo aria-hidden="true"></span>
+        <span class="brand__name" data-clj-brand>长留玉</span>
+      </span>
+      <span class="chip chip--plain chip--sm" id="version-tag">精简版</span>
+    </div>
+
+    <!-- 进度 -->
+    <div class="quiz-progress">
+      <div class="quiz-progress__meta">
+        <span>
+          <span class="quiz-progress__now t-num" id="step-now">01</span>
+          <span class="t-num"> / </span>
+          <span class="t-num" id="step-all">30</span>
+        </span>
+        <span>已答 <span class="t-num" id="answered-count">0</span> 题</span>
+      </div>
+      <div class="quiz-progress__bar" id="progress-bar" role="progressbar"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="答题进度">
+        <div class="quiz-progress__fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- 题目与选项 -->
+    <main class="app__main quiz-main">
+
+      <div class="question-card" id="question-card">
+        <div class="question-card__meta" id="question-meta">第 1 / 30 题</div>
+        <h1 class="question-card__text" id="question-text">正在加载题目…</h1>
+      </div>
+
+      <div class="options" id="options" role="radiogroup" aria-labelledby="question-text"></div>
+
+    </main>
+
+    <!-- 底部导航 -->
+    <div>
+      <div class="quiz-nav">
+        <button class="btn btn--ghost quiz-nav__prev" id="btn-prev" type="button">上一题</button>
+        <button class="btn btn--primary" id="btn-next" type="button">下一题</button>
+      </div>
+      <p class="quiz-nav__hint" id="nav-hint">选一个最接近你的选项，选完自动进入下一题</p>
+    </div>
+
+    <footer class="footer">
+      <div class="footer__brand">
+        <span class="footer__dot" aria-hidden="true"></span>
+        <span data-clj-brand>长留玉</span>
+      </div>
+      <p class="footer__note" data-clj-disclaimer></p>
+    </footer>
+
+  </div>
+
+  <!-- 脚本顺序不能乱：config → global → 题库 → 算法 → 数据层 → 页面逻辑 -->
+  <script src="../js/config.js"></script>
+  <script src="../js/global.js"></script>
+  <script src="../js/career/questions-light.js"></script>
+  <script src="../js/career/questions-full-part1.js"></script>
+  <script src="../js/career/questions-full-part2.js"></script>
+  <script src="../js/career/questions-full-part3.js"></script>
+  <script src="../js/career/questions-full-part4.js"></script>
+  <script src="../js/career/scoring.js"></script>
+  <script src="../js/career/data.js"></script>
+  <script src="../js/career/test.js"></script>
+</body>
+</html>

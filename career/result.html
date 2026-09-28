@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#0B0B0F">
+  <meta name="description" content="你适合什么样的职业 · 结果页。仅供娱乐，不构成专业建议。">
+  <title>我的测试结果｜长留玉</title>
+
+  <link rel="icon" href="../assets/ip.png">
+  <link rel="apple-touch-icon" href="../assets/ip.png">
+
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/career.css">
+</head>
+<body>
+
+  <div class="app">
+
+    <div class="quiz-top">
+      <span class="brand">
+        <span class="brand__mark" data-clj-logo aria-hidden="true"></span>
+        <span class="brand__name" data-clj-brand>长留玉</span>
+      </span>
+      <a class="quiz-top__back" href="../index.html">回到首页</a>
+    </div>
+
+    <main class="app__main">
+
+      <!-- 结果主视觉 -->
+      <section class="card card--tint result-hero anim-up">
+        <div>
+          <div class="t-eyebrow" id="code-label">你的霍兰德兴趣代码</div>
+          <div class="result-hero__code t-num" id="result-code">---</div>
+        </div>
+        <div>
+          <p class="t-eyebrow" style="margin-bottom:6px;">最佳匹配职业</p>
+          <h1 class="result-hero__title" id="result-title">正在计算…</h1>
+        </div>
+        <p class="result-hero__profile" id="result-profile"></p>
+        <div class="tag-row" id="strength-tags"></div>
+        <div class="tag-row" id="meta-tags"></div>
+        <p class="result-hero__spread" id="result-spread"></p>
+      </section>
+
+      <!-- 雷达图 -->
+      <section class="card anim-up d-1">
+        <div class="section-head">
+          <h2 class="section-head__title">六维兴趣图谱</h2>
+          <span class="section-head__hint">满分 100</span>
+        </div>
+        <div class="radar-holder" id="radar-holder"></div>
+      </section>
+
+      <!-- 维度明细 -->
+      <section class="card anim-up d-2">
+        <div class="section-head">
+          <h2 class="section-head__title">维度明细</h2>
+          <span class="section-head__hint">由高到低</span>
+        </div>
+        <div class="dim-bars" id="dim-bars"></div>
+      </section>
+
+      <!-- 最佳匹配职业 -->
+      <section>
+        <div class="section-head">
+          <h2 class="section-head__title">最适合你的职业</h2>
+          <span class="section-head__hint">匹配度越高越贴合</span>
+        </div>
+        <div id="career-main"></div>
+      </section>
+
+      <!-- 次匹配职业 -->
+      <section id="career-alt-wrap">
+        <div class="section-head">
+          <h2 class="section-head__title">也很适合的还有</h2>
+        </div>
+        <div class="stack-2" id="career-alt"></div>
+      </section>
+
+      <!-- 行动建议 -->
+      <section class="card">
+        <div class="section-head">
+          <h2 class="section-head__title">接下来可以做什么</h2>
+        </div>
+        <ul class="advice-list" id="advice-list"></ul>
+      </section>
+
+      <!-- 操作 -->
+      <section class="result-actions">
+        <button class="btn btn--primary" id="btn-save-img" type="button">保存结果图片</button>
+        <div class="result-actions__row">
+          <button class="btn btn--ghost" id="btn-share" type="button">分享</button>
+          <button class="btn btn--ghost" id="btn-copy" type="button">复制链接</button>
+        </div>
+        <div class="result-actions__row">
+          <button class="btn btn--quiet" id="btn-retry" type="button">重新测试</button>
+          <button class="btn btn--quiet" id="btn-home" type="button">返回首页</button>
+        </div>
+      </section>
+
+      <!-- 推荐其它测试 -->
+      <section>
+        <div class="section-head">
+          <h2 class="section-head__title">你可能还想测</h2>
+        </div>
+        <div class="stack-2" id="other-tests"></div>
+      </section>
+
+      <p class="t-small center" data-clj-disclaimer></p>
+
+    </main>
+
+    <footer class="footer">
+      <div class="footer__brand">
+        <span class="footer__dot" aria-hidden="true"></span>
+        <span data-clj-brand>长留玉</span>
+      </div>
+      <p class="footer__note" data-clj-disclaimer></p>
+    </footer>
+
+  </div>
+
+  <!-- 脚本顺序不能乱：config → global → 题库 → 职业库 → 算法 → 数据层 → 页面逻辑 -->
+  <script src="../js/config.js"></script>
+  <script src="../js/global.js"></script>
+  <script src="../js/career/questions-light.js"></script>
+  <script src="../js/career/questions-full-part1.js"></script>
+  <script src="../js/career/questions-full-part2.js"></script>
+  <script src="../js/career/questions-full-part3.js"></script>
+  <script src="../js/career/questions-full-part4.js"></script>
+  <script src="../js/career/careers-part1.js"></script>
+  <script src="../js/career/careers-part2.js"></script>
+  <script src="../js/career/careers-part3.js"></script>
+  <script src="../js/career/careers-part4.js"></script>
+  <script src="../js/career/scoring.js"></script>
+  <script src="../js/career/data.js"></script>
+  <script src="../js/career/result.js"></script>
+</body>
+</html>

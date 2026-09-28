@@ -1,0 +1,468 @@
+/* ============================================================
+ * 长留玉 · 职业测试专属样式
+ * ------------------------------------------------------------
+ * 依赖 global.css 里的设计变量，这里不重复定义颜色，
+ * 换肤只改 global.css 的 :root 即可。
+ *
+ * 目录：
+ *   1. 开始页
+ *   2. 答题页
+ *   3. 结果页
+ *   4. 分享海报
+ *   （首页与模块列表页样式已拆到 site.css）
+ * ============================================================ */
+
+/* ============================================================
+ * 1. 开始页
+ * ============================================================ */
+.intro-hero { display: flex; align-items: center; gap: var(--sp-2); }
+.intro-hero__title { font-size: 22px; font-weight: 700; line-height: 1.35; }
+.intro-hero__meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+.intro-points { display: flex; flex-direction: column; gap: 10px; }
+.intro-points__item { display: flex; gap: 10px; font-size: 13px; color: var(--text-2); line-height: 1.7; }
+.intro-points__idx {
+  flex: 0 0 auto;
+  width: 20px; height: 20px;
+  margin-top: 2px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent-3);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 版本选择 */
+.version-list { display: flex; flex-direction: column; gap: 10px; }
+.version-opt {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--sp-2);
+  border-radius: var(--r-md);
+  background: var(--card-2);
+  border: 1.5px solid var(--border);
+  transition: border-color var(--dur) var(--ease),
+              background-color var(--dur) var(--ease),
+              transform var(--dur-fast) var(--ease);
+}
+.version-opt:active { transform: scale(0.99); }
+.version-opt.is-active {
+  border-color: var(--accent-2);
+  background: linear-gradient(180deg, rgba(108, 92, 231, 0.16), rgba(108, 92, 231, 0.04));
+  box-shadow: 0 8px 24px rgba(108, 92, 231, 0.18);
+}
+.version-opt__top { display: flex; align-items: center; gap: 8px; }
+.version-opt__label { font-size: 15px; font-weight: 700; }
+.version-opt__badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--card-3);
+  color: var(--text-2);
+}
+.version-opt.is-active .version-opt__badge { background: var(--accent); color: #fff; }
+.version-opt__desc { margin-top: 6px; font-size: 12px; color: var(--text-2); line-height: 1.7; }
+.version-opt__tick {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  transition: all var(--dur) var(--ease);
+}
+.version-opt.is-active .version-opt__tick {
+  border-color: var(--accent-3);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--card-2);
+}
+
+/* ============================================================
+ * 3. 答题页
+ * ============================================================ */
+.quiz-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-1);
+  min-height: 34px;
+}
+.quiz-top__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.quiz-progress { display: flex; flex-direction: column; gap: 8px; }
+.quiz-progress__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.quiz-progress__now { color: var(--text); font-weight: 700; font-size: 15px; }
+.quiz-progress__bar {
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--card-2);
+  overflow: hidden;
+  position: relative;
+}
+.quiz-progress__fill {
+  height: 100%;
+  width: 0;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--accent), var(--accent-3));
+  transition: width var(--dur-slow) var(--ease);
+  box-shadow: 0 0 12px rgba(139, 124, 246, 0.6);
+}
+
+.quiz-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+}
+
+.question-card { min-height: 132px; display: flex; flex-direction: column; justify-content: center; }
+.question-card__meta { font-size: 12px; color: var(--text-3); letter-spacing: 0.06em; margin-bottom: 10px; }
+.question-card__text {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.55;
+  letter-spacing: 0.005em;
+}
+
+@keyframes clj-slide-in {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes clj-slide-back {
+  from { opacity: 0; transform: translateX(-18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.anim-up { animation-name: clj-fade-up; }
+.anim-back { animation: clj-slide-back var(--dur) var(--ease-out) both; }
+#question-card.anim-up { animation: clj-fade-up var(--dur) var(--ease-out) both; }
+
+/* 选项 */
+.options { display: flex; flex-direction: column; gap: 10px; }
+.opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  padding: 14px var(--sp-2);
+  border-radius: var(--r-md);
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  text-align: left;
+  transition: border-color var(--dur-fast) var(--ease),
+              background-color var(--dur-fast) var(--ease),
+              transform var(--dur-fast) var(--ease);
+}
+.opt:active { transform: scale(0.985); }
+.opt__key {
+  flex: 0 0 auto;
+  width: 24px; height: 24px;
+  border-radius: 8px;
+  background: var(--card-3);
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--dur-fast) var(--ease);
+}
+.opt__label { flex: 1 1 auto; font-size: 15px; color: var(--text-2); transition: color var(--dur-fast) var(--ease); }
+.opt__mark {
+  flex: 0 0 auto;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  transition: all var(--dur-fast) var(--ease);
+}
+.opt.is-selected {
+  border-color: var(--accent-2);
+  background: linear-gradient(90deg, rgba(108, 92, 231, 0.20), rgba(108, 92, 231, 0.05));
+}
+.opt.is-selected .opt__label { color: var(--text); font-weight: 600; }
+.opt.is-selected .opt__key { background: var(--accent); color: #fff; }
+.opt.is-selected .opt__mark {
+  border-color: var(--accent-3);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--card);
+}
+
+/* 底部导航：两个按钮等宽平分，不再一大一小 */
+.quiz-nav { display: flex; gap: 10px; align-items: center; }
+.quiz-nav .btn { flex: 1 1 0; width: auto; min-width: 0; }
+.quiz-nav__hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 10px;
+  transition: color var(--dur) var(--ease);
+}
+
+/* ============================================================
+ * 4. 结果页
+ * ============================================================ */
+.result-hero { display: flex; flex-direction: column; gap: var(--sp-2); }
+.result-hero__code {
+  font-family: var(--font-num);
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  background: linear-gradient(120deg, var(--accent-3), var(--cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.result-hero__title { font-size: 26px; font-weight: 700; line-height: 1.3; }
+.result-hero__profile { font-size: 13px; color: var(--text-2); line-height: 1.8; }
+.result-hero__spread {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.8;
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  background: var(--card-2);
+  border-left: 2px solid var(--accent-line);
+}
+
+/* 雷达图 */
+.radar-holder { display: flex; justify-content: center; padding: var(--sp-1) 0; }
+.radar { width: 100%; max-width: 320px; height: auto; display: block; }
+
+/* 维度条 */
+.dim-bars { display: flex; flex-direction: column; gap: 14px; }
+.dim-row__head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+.dim-row__name { font-size: 14px; font-weight: 600; }
+.dim-row__alias { font-size: 11px; color: var(--text-3); }
+.dim-row__val { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--accent-3); }
+.dim-row__track {
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--card-2);
+  overflow: hidden;
+}
+.dim-row__fill {
+  height: 100%;
+  width: 0;
+  border-radius: var(--r-pill);
+  /* 六条统一用同一个三段渐变（紫 → 淡紫 → 冰蓝）。
+   * 原来只有第一条有渐变的「感觉」，是因为第一条单独换成了带色相变化的
+   * 紫→青，而其余条是 紫→浅紫（同色调只变明度），8px 细条上几乎看不出变化。 */
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-3) 58%, var(--cyan) 100%);
+  transition: width 700ms var(--ease-out);
+}
+/* 最强项只靠一层柔光区分，不再单独换颜色 */
+.dim-row:first-child .dim-row__fill {
+  box-shadow: 0 0 14px rgba(139, 124, 246, 0.55);
+}
+.dim-row__comment { margin-top: 7px; font-size: 12px; color: var(--text-3); line-height: 1.7; }
+
+/* 职业卡片 */
+.career-card--main { padding: var(--sp-3); }
+.career-card__head { display: flex; gap: var(--sp-2); align-items: center; }
+.career-card__ring {
+  flex: 0 0 auto;
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(108, 92, 231, 0.28), transparent 70%),
+    var(--card-2);
+  border: 1.5px solid var(--accent-line);
+}
+.career-card__ring-num { font-size: 20px; font-weight: 800; color: var(--accent-3); line-height: 1.1; }
+.career-card__ring-label { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+.career-card__title-box { min-width: 0; flex: 1 1 auto; }
+.career-card__name { font-size: 21px; font-weight: 700; margin-top: 6px; }
+.career-card__reason { margin-top: 6px; font-size: 12px; color: var(--text-2); line-height: 1.7; }
+.career-card__desc { margin-top: var(--sp-2); }
+.career-card__block { margin-top: var(--sp-2); padding-top: var(--sp-2); border-top: 1px solid var(--border); }
+.career-card__label { font-size: 11px; color: var(--text-3); letter-spacing: 0.1em; margin-bottom: 8px; }
+
+.career-alt { padding: var(--sp-2); }
+.career-alt__top { display: flex; align-items: baseline; gap: 8px; }
+.career-alt__rank { font-size: 12px; color: var(--text-3); font-weight: 700; }
+.career-alt__name { font-size: 16px; font-weight: 700; }
+.career-alt__fit { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--accent-3); }
+.career-alt__meta { margin-top: 4px; font-size: 11px; color: var(--text-3); line-height: 1.6; }
+
+/* 行动建议 */
+.advice-list { display: flex; flex-direction: column; gap: 10px; }
+.advice { display: flex; gap: 10px; align-items: flex-start; }
+.advice__idx {
+  flex: 0 0 auto;
+  width: 26px; height: 26px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent-3);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.advice__text { flex: 1 1 auto; font-size: 13px; color: var(--text-2); line-height: 1.75; padding-top: 3px; }
+.advice--muted .advice__idx {
+  background: var(--card-2);
+  border-color: var(--border);
+  color: var(--text-3);
+  width: 34px;
+  font-size: 10px;
+}
+.advice--muted .advice__text { color: var(--text-3); }
+
+/* 按钮组 */
+.result-actions { display: flex; flex-direction: column; gap: 10px; }
+.result-actions__row { display: flex; gap: 10px; }
+.result-actions__row .btn { flex: 1 1 0; }
+
+/* 其它测试 */
+.mini-test { display: block; padding: var(--sp-2); transition: transform var(--dur) var(--ease); }
+.mini-test:active { transform: scale(0.985); }
+.mini-test.is-soon { opacity: 0.6; }
+.mini-test__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.mini-test__name { font-size: 15px; font-weight: 700; }
+
+/* 结果页数据条（用于「答题概况」） */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat { text-align: center; padding: 12px 6px; border-radius: var(--r-sm); background: var(--card-2); }
+.stat__num { font-size: 17px; font-weight: 700; color: var(--accent-3); }
+.stat__label { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+
+/* ============================================================
+ * 5. 分享海报
+ * ------------------------------------------------------------
+ * 平时藏在屏幕外，截图时才生成。所有样式写死数值，
+ * 保证 html2canvas 渲染时不会被媒体查询影响。
+ * ============================================================ */
+.poster-holder {
+  position: fixed;
+  left: -20000px;
+  top: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.poster {
+  box-sizing: border-box;
+  padding: 32px 28px;
+  background: linear-gradient(180deg, #16131F 0%, #0B0B0F 42%, #0B0B0F 100%);
+  font-family: var(--font);
+  color: #F5F5F7;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.poster__brand { display: flex; align-items: center; gap: 10px; }
+/* 海报里的品牌标识是 canvas 现画的（不走 <img>），这里只负责尺寸 */
+.poster__mark { flex: 0 0 auto; display: block; }
+.poster__brand-name { font-size: 15px; font-weight: 700; letter-spacing: 0.16em; color: #F5F5F7; }
+.poster__brand-en { font-size: 9px; letter-spacing: 0.36em; color: #6E6E78; margin-left: auto; }
+.poster__test-name { font-size: 20px; font-weight: 700; letter-spacing: 0.02em; }
+.poster__code {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #A78BFA;
+  line-height: 1;
+  margin-top: -6px;
+}
+.poster__career {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(139, 124, 246, 0.32);
+}
+.poster__career-label { font-size: 10px; letter-spacing: 0.16em; color: #A78BFA; }
+.poster__career-name { font-size: 24px; font-weight: 700; margin-top: 6px; }
+.poster__career-meta { font-size: 11px; color: #A1A1AA; margin-top: 4px; }
+.poster__career-desc { font-size: 12px; color: #A1A1AA; line-height: 1.7; margin-top: 8px; }
+.poster__radar { display: flex; justify-content: center; }
+.poster__radar .radar { max-width: 230px; }
+.poster__bars { display: flex; flex-direction: column; gap: 10px; }
+.poster__bar-row { display: grid; grid-template-columns: 56px 1fr 34px; align-items: center; gap: 8px; }
+.poster__bar-name { font-size: 11px; color: #A1A1AA; }
+.poster__bar-value { font-size: 11px; color: #F5F5F7; text-align: right; font-weight: 600; }
+.poster__bar-track { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.poster__bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #6C5CE7, #A78BFA 58%, #22D3EE); }
+.poster__footer {
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.poster__foot-brand { font-size: 12px; color: #A78BFA; letter-spacing: 0.08em; }
+.poster__foot-url { font-size: 11px; color: #6E6E78; word-break: break-all; }
+.poster__foot-note { font-size: 10px; color: #4B4B55; line-height: 1.6; }
+
+/* ============================================================
+ * 6. 保存图片的兜底遮罩
+ * ------------------------------------------------------------
+ * 内嵌 iframe / 微信内置浏览器里 <a download> 会被静默拦掉，
+ * 这时不搞「假装已保存」，直接把图铺出来让用户长按存。
+ * ============================================================ */
+.save-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: rgba(0, 0, 0, 0.82);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: clj-fade-in var(--dur) var(--ease) both;
+}
+.save-overlay__img {
+  max-width: min(86vw, 340px);
+  max-height: 60vh;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+}
+.save-overlay__hint {
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: center;
+  line-height: 1.7;
+  max-width: 24em;
+}
+.save-overlay__close { width: auto; min-width: 108px; }
+
+/* ============================================================
+ * 7. 小屏微调
+ * ============================================================ */
+@media (max-width: 360px) {
+  .question-card__text { font-size: 19px; }
+  .result-hero__code { font-size: 38px; }
+  .result-hero__title { font-size: 22px; }
+  .career-card__ring { width: 66px; height: 66px; }
+  .career-card__ring-num { font-size: 17px; }
+}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#0B0B0F">
+  <meta name="description" content="你适合什么样的职业 · 基于 RIASEC 职业兴趣模型的轻娱乐测试。仅供娱乐，不构成专业建议。">
+  <title>你适合什么样的职业｜长留玉</title>
+
+  <link rel="icon" href="../assets/ip.png">
+  <link rel="apple-touch-icon" href="../assets/ip.png">
+
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/career.css">
+</head>
+<body>
+
+  <div class="app">
+
+    <!-- 顶部：返回 + 品牌（品牌处于不显眼位置） -->
+    <div class="quiz-top">
+      <a class="quiz-top__back" href="../index.html">
+        <span aria-hidden="true">←</span> 返回首页
+      </a>
+      <span class="brand">
+        <span class="brand__mark" data-clj-logo aria-hidden="true"></span>
+        <span class="brand__name" data-clj-brand>长留玉</span>
+      </span>
+    </div>
+
+    <main class="app__main">
+
+      <!-- 测试名 + IP 图案 -->
+      <section class="card card--tint intro-hero">
+        <span data-clj-ip="lg"></span>
+        <div class="grow">
+          <h1 class="intro-hero__title">你适合什么样的职业</h1>
+          <div class="intro-hero__meta">
+            <span class="chip">RIASEC 模型</span>
+            <span class="chip chip--plain">6 个维度</span>
+            <span class="chip chip--plain" id="hero-badge">精简版</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 测试说明 -->
+      <section class="card stack-2">
+        <div class="section-head">
+          <h2 class="section-head__title">这个测试怎么玩</h2>
+        </div>
+        <div class="intro-points">
+          <div class="intro-points__item">
+            <span class="intro-points__idx t-num">01</span>
+            <span>每题五个档位，从「完全不这样」到「这简直就是我」，选最像你的那个，不用纠结。</span>
+          </div>
+          <div class="intro-points__item">
+            <span class="intro-points__idx t-num">02</span>
+            <span>每题都必答，不能跳过；选完会自动跳到下一题，想改就点「上一题」回去。</span>
+          </div>
+          <div class="intro-points__item">
+            <span class="intro-points__idx t-num">03</span>
+            <span>答完会算出你的六个维度分，并从一百多个职业里挑出最匹配的几个。</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 版本选择 -->
+      <section class="card stack-2">
+        <div class="section-head">
+          <h2 class="section-head__title">选择版本</h2>
+          <span class="section-head__hint">两版共用同一套职业库</span>
+        </div>
+        <div class="version-list" id="version-list"></div>
+        <p class="t-small" id="resume-tip" hidden></p>
+      </section>
+
+      <p class="t-small center" data-clj-disclaimer></p>
+
+    </main>
+
+    <!-- 底部操作 -->
+    <div class="stack-1">
+      <button class="btn btn--primary" id="btn-start" type="button">开始测试</button>
+      <button class="btn btn--quiet btn--sm" id="btn-clear-resume" type="button" hidden>清除上次进度，重新开始</button>
+    </div>
+
+    <footer class="footer">
+      <div class="footer__brand">
+        <span class="footer__dot" aria-hidden="true"></span>
+        <span data-clj-brand>长留玉</span>
+      </div>
+      <p class="footer__note" data-clj-disclaimer></p>
+    </footer>
+
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/global.js"></script>
+  <script src="../js/career/questions-light.js"></script>
+  <script src="../js/career/questions-full-part1.js"></script>
+  <script src="../js/career/questions-full-part2.js"></script>
+  <script src="../js/career/questions-full-part3.js"></script>
+  <script src="../js/career/questions-full-part4.js"></script>
+  <script src="../js/career/scoring.js"></script>
+  <script src="../js/career/data.js"></script>
+  <script src="../js/career/start.js"></script>
+</body>
+</html>

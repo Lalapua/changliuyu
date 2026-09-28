@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#0B0B0F">
+  <meta name="description" content="长留玉 · 轻娱乐小站。有测试也有小游戏，玩完可以直接生成图片分享给朋友。仅供娱乐，不构成专业建议。">
+  <meta name="format-detection" content="telephone=no">
+  <title>长留玉 · 轻娱乐小站</title>
+
+  <link rel="icon" href="./assets/ip.png">
+  <link rel="apple-touch-icon" href="./assets/ip.png">
+
+  <link rel="stylesheet" href="./css/global.css">
+  <link rel="stylesheet" href="./css/site.css">
+</head>
+<body>
+
+  <div class="app">
+
+    <main class="app__main">
+
+      <!-- 品牌主视觉：只留 logo，中文名退成右上角极小落款，主标题换成英文（拼音） -->
+      <header class="home-hero">
+        <span class="home-hero__seal" data-clj-brand>长留玉</span>
+        <span class="home-hero__ip" data-clj-ip="xl"></span>
+        <h1 class="home-hero__wordmark" data-clj-brand-en>CHANG LIU YU</h1>
+        <div class="home-hero__rule" aria-hidden="true"></div>
+        <p class="home-hero__sub" data-clj-slogan></p>
+      </header>
+
+      <!-- 内容模块：内容由 js/home.js 依据 config.js 的 MODULES 自动渲染 -->
+      <section>
+        <div class="section-head">
+          <h2 class="section-head__title">玩点什么</h2>
+          <span class="section-head__hint">选一个进去</span>
+        </div>
+        <div class="stack-2" id="module-list"></div>
+      </section>
+
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+      <div class="footer__brand">
+        <span class="footer__mark" data-clj-logo aria-hidden="true"></span>
+        <span data-clj-brand>长留玉</span>
+      </div>
+      <p class="footer__note" data-clj-disclaimer></p>
+      <p class="footer__note">© <span id="year"></span> <span data-clj-brand></span> · 保留所有权利</p>
+    </footer>
+
+  </div>
+
+  <!-- 脚本：config 必须最先，global 次之，页面逻辑最后 -->
+  <script src="./js/config.js"></script>
+  <script src="./js/global.js"></script>
+  <script src="./js/home.js"></script>
+</body>
+</html>
