@@ -251,6 +251,31 @@ console.log('  职业 energy：' + careers.length + ' 个，值域 ' +
 console.log('    最低三个：' + sortedE.slice(0, 3).map(c => c.name + '(' + c.energy + ')').join('、'));
 console.log('    最高三个：' + sortedE.slice(-3).reverse().map(c => c.name + '(' + c.energy + ')').join('、'));
 
+/* 持平整判率：FLAT_VAR 一旦设松，就会把「正常有偏好」的作答误判成六维持平，
+ * 结果页会拿「整体投入度」换掉霍兰德代码 —— 曾经用 0.01 时误判率高达 28.7%。
+ * 这里用随机作答守住这个比例，改阈值时它会立刻报警。 */
+let fpCount = 0;
+const FP_N = 3000;
+let fpSeed = 12345;
+function fpRand() { fpSeed = (fpSeed * 1103515245 + 12345) & 0x7fffffff; return fpSeed / 0x7fffffff; }
+for (let i = 0; i < FP_N; i++) {
+  const ans = {};
+  qsLight.forEach(q => { ans[q.id] = 1 + Math.floor(fpRand() * 5); });
+  if (S.isUniform(S.computeScores(qsLight, ans))) fpCount++;
+}
+const fpRate = fpCount / FP_N * 100;
+assert(fpRate < 1, '随机作答被判为「六维持平」的比例 < 1%',
+  fpRate.toFixed(2) + '%（' + fpCount + '/' + FP_N + '）  FLAT_VAR=' + S.FLAT_VAR +
+  ' ≈ 百分制 std ' + (Math.sqrt(S.FLAT_VAR) * 100).toFixed(1) + ' 分');
+
+/* 具体反例：极差 20 分的作答绝不能被判成持平 */
+const notFlat = { pct: {} };
+S.DIM_KEYS.forEach((k, i) => { notFlat.pct[k] = [50, 55, 70, 50, 60, 65][i]; });
+assert(!S.isUniform(notFlat), '六维极差 20 分的正常画像不会被误判为持平');
+const notFlat2 = { pct: {} };
+S.DIM_KEYS.forEach((k, i) => { notFlat2.pct[k] = [55, 46, 60, 67, 63, 45][i]; });
+assert(!S.isUniform(notFlat2), '六维极差 22 分的正常画像不会被误判为持平（曾误判的真实案例）');
+
 if (extFail) process.exitCode = 1;
 
 /* ============================================================
