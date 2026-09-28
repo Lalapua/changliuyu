@@ -73,6 +73,7 @@ npx serve .
 │   ├── global.js                  公共工具：存储、IP 图、Toast、懒加载
 │   ├── home.js                    首页逻辑：渲染模块卡片
 │   ├── module.js                  模块列表页逻辑：渲染模块下的条目卡片
+│   ├── qr.js                      零依赖二维码编码器（结果图片里那个码）
 │   └── career/
 │       ├── questions-light.js     精简版题库（30 题）
 │       ├── questions-full-part1.js ~ part4.js   全量版题库（120 题，每份 30 题）
@@ -94,6 +95,8 @@ npx serve .
 │   ├── preview-server.js          本地预览服务器（Node 运行，不参与线上）
 │   ├── list-careers.js            生成 CAREERS.md（职业库权重总表）
 │   ├── explain-match.js           算法追踪器：逐步打印维度→职业的中间量
+│   ├── verify-qr.js               二维码自检：独立解码器还原 + 可选与参考库比对
+│   ├── verify-poster.js           结果图片端到端：从画布像素里抠出二维码逐格比对
 │   ├── verify-data.js             数据自检：题库/职业库/计分匹配/点评文案池
 │   ├── verify-quiz.js             交互自检：自动跳题/回退/末题确认/存档
 │   └── verify-pages.js            页面自检：语法/引用/DOM id/脚本顺序/模块清单
@@ -419,19 +422,46 @@ score  = 0.7 × 形状分 + 0.3 × 能量分
 
 ---
 
-## 八、分享图片的实现
+## 八、结果图片的实现
 
-结果图片按优先级走三条路，全部失败也不会崩：
+**单一的自绘 Canvas 渲染器，零外部依赖。** 整条 html2canvas 路线已经拆掉，理由：
 
-1. **html2canvas**（按需从 CDN 懒加载，主 CDN 失败自动换 unpkg）——把一个离屏 DOM 海报渲染成 canvas；
-2. **本地 Canvas 手绘兜底**——纯 `CanvasRenderingContext2D` 画背景、文字、六条维度条，**离线也能出图**，不依赖任何第三方库；
-3. **系统分享 / 下载**——优先 `navigator.share({ files })`（iOS / Android 可唤起原生分享面板），不支持则触发 `<a download>` 下载。
+1. 它要联网从 CDN 拉 200KB，断网或内网环境下这一整条路直接作废；
+2. 它把 DOM 克隆进 iframe 再截图，画面里只要有一张跨域图片就会**污染画布**，之后 `toBlob` 抛 `SecurityError`，图必然存不下来 —— 之前线上报「生成图片失败」正是这个原因；
+3. 为了让它的渲染结果正确，还得额外维护一整套 `.poster` 样式，两处容易走散（那套样式也一并删了）。
 
-海报内容包含：品牌名与 logo（canvas 几何重绘，不放 `<img>`）、测试名称、代码位、最佳匹配职业与匹配度、六维雷达图、维度条、站点链接和免责声明。
+现在只有一条路：
 
-两个小坑已经处理：
-- 第三方库换了 CDN 也不一定加载得出来（内网、离线），所以兜底那条路是必须的；
-- iOS Safari 会忽略 `download` 属性，所以优先走系统分享。
+```
+drawPoster()      840px 宽 × 2 倍图，按内容画完再裁掉多余高度
+  ├── 背景渐变 + 顶部光晕
+  ├── 品牌行（logo 用 logoCanvas() 几何重绘，不是图片）
+  ├── 测试名 / 代码位（六维持平时是投入等级）
+  ├── 最佳匹配职业 + 匹配度
+  ├── drawRadar() 六维雷达图（和页面 SVG 同一套几何，只是换成 canvas 画）
+  ├── 六条维度条
+  ├── drawQR()    二维码 → 扫了直接回首页
+  └── 页脚品牌语 + 免责声明
+```
+
+**海报里不放任何 `<img>`**。一旦有跨域图片，画布被污染后 `toBlob` 会抛 `SecurityError`，图就废了。品牌标识和历史那套一样，用路径重绘。交付前还会先 `exportBlob()` 验一次「能不能安全导出」再给用户，避免让人看到一句莫名其妙的失败。
+
+交付顺序：`navigator.share({ files })`（移动端唤起原生分享）→ `<a download>` → 内嵌 iframe 里下载会被静默拦掉，这时把图铺在遮罩层上让用户长按保存。
+
+### 二维码
+
+`js/qr.js` 是自己写的**零依赖二维码编码器**（字节模式 + Reed-Solomon 纠错 + 8 种掩码择优），支持版本 1~9、L/M/Q/H 四个纠错档，海报里用 M 档。二维码里编的地址取自 `config.js` 的 **`SITE_URL`**：
+
+```js
+SITE_URL: 'https://lalapua.github.io/changliuyu/',
+```
+
+留空则回落到 `BASE_URL`，但**本地预览时 `BASE_URL` 是 127.0.0.1，别人扫出来打不开**，所以正式地址建议写死。
+
+自己写的当然要证明它对。`node tools/verify-qr.js` 做两件事：
+
+- **自解码**（不依赖任何外部库）：另写一个解码器读格式信息、反掩码、按蛇形顺序取回码字、解交织、还原文本，解不出原文就是错的。解码器**故意不复用编码器的任何函数**，否则同一个 bug 会同时骗过两侧。
+- **与参考库逐位比对**（可选，装了 `qrcode-generator` 才跑）：掩码一致时要求点阵逐位相同。注意 `qrcode-generator` 的「规则 1」惩罚用的是 3×3 邻域计数（老实现的已知偏差），规范要求的是同行/同列连续同色计数，所以掩码选择经常不同 —— 这属正常，任何掩码都是合法二维码。
 
 ---
 
@@ -508,8 +538,10 @@ window.XXX = (window.XXX || []).concat([ /* … */ ]);
 
 ```bash
 node tools/verify-data.js     # 题库/职业库结构 + 计分匹配算法冒烟测试 + 维度点评文案池
-node tools/verify-pages.js    # JS 语法 + 资源引用 + DOM id 接线 + 脚本顺序
+node tools/verify-pages.js    # JS 语法 + 资源引用 + DOM id 接线 + 脚本顺序 + 模块清单
 node tools/verify-quiz.js     # 答题交互行为（自动跳题 / 回退 / 末题确认 / 存档）
+node tools/verify-qr.js       # 二维码：独立解码器还原原文（+ 可选与参考库逐位比对）
+node tools/verify-poster.js   # 结果图片端到端：真机出图 → 从像素抠出二维码逐格比对（需 Chrome）
 node tools/explain-match.js   # 不是测试，是「算法追踪器」：逐步打印维度→职业的中间量
 node tools/list-careers.js    # 不是测试，是「文档生成器」：刷新 CAREERS.md
 ```

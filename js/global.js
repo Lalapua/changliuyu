@@ -3,7 +3,7 @@
  * ------------------------------------------------------------
  * 依赖 config.js，必须在它之后引入。
  * 提供：DOM 选择器、本地存储、IP 图案挂载、品牌/页脚挂载、
- *       提示条、复制、脚本懒加载、确定性哈希 等公共能力。
+ *       提示条、确定性哈希 等公共能力。
  * ============================================================ */
 (function () {
   'use strict';
@@ -172,47 +172,7 @@
   };
 
   /* ============================================================
-   * 六、复制文本
-   * ============================================================ */
-  CLJ.copy = function (text) {
-    function legacy() {
-      var ta = CLJ.el('textarea', { style: { position: 'fixed', top: '-1000px', opacity: '0' } });
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      var ok = false;
-      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
-      document.body.removeChild(ta);
-      return ok;
-    }
-    if (navigator.clipboard && window.isSecureContext) {
-      return navigator.clipboard.writeText(text).then(
-        function () { return true; },
-        function () { return legacy(); }
-      );
-    }
-    return Promise.resolve(legacy());
-  };
-
-  /* ============================================================
-   * 七、脚本懒加载（用于 html2canvas，避免首屏加载大库）
-   * ============================================================ */
-  var loadingScripts = {};
-  CLJ.loadScript = function (src) {
-    if (loadingScripts[src]) return loadingScripts[src];
-    loadingScripts[src] = new Promise(function (resolve, reject) {
-      var s = document.createElement('script');
-      s.src = src;
-      s.async = true;
-      s.onload = function () { resolve(); };
-      s.onerror = function () { reject(new Error('脚本加载失败：' + src)); };
-      document.head.appendChild(s);
-    });
-    return loadingScripts[src];
-  };
-
-  /* ============================================================
-   * 八、确定性哈希
+   * 六、确定性哈希
    * ------------------------------------------------------------
    * 同一个输入永远得到同一个结果。目前用于结果页的维度点评取词
    * （同一个维度 + 同一个分值永远念同一句话，刷新不会改口）。
@@ -228,14 +188,14 @@
   };
 
   /* ============================================================
-   * 九、动态设置标题（分享时能看到测试名，但页面主视觉仍是测试名）
+   * 七、动态设置标题（标签页显示测试名，页面主视觉仍是测试名）
    * ============================================================ */
   CLJ.setTitle = function (mainTitle) {
     document.title = mainTitle ? (mainTitle + CFG.SHARE_TITLE_SUFFIX) : CFG.BRAND;
   };
 
   /* ============================================================
-   * 十、首屏挂载
+   * 八、首屏挂载
    * ============================================================ */
   CLJ.boot = function () {
     CLJ.mountBrand();

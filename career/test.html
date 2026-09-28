@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="../css/global.css">
   <link rel="stylesheet" href="../css/career.css">
 </head>
-<body>
+<body class="quiz-page">
 
   <div class="app">
 
@@ -63,16 +63,13 @@
         <button class="btn btn--ghost quiz-nav__prev" id="btn-prev" type="button">上一题</button>
         <button class="btn btn--primary" id="btn-next" type="button">下一题</button>
       </div>
-      <p class="quiz-nav__hint" id="nav-hint">选一个最接近你的选项，选完自动进入下一题</p>
+      <!-- 提示与免责声明并成一块：原来免责声明单独占一整个页脚（63px），
+           在手机上就是白白多吃掉一屏，收进这里刚好。 -->
+      <p class="quiz-nav__hint">
+        <span id="nav-hint">选一个最接近你的选项，选完自动进入下一题</span>
+        <span class="quiz-nav__legal"><span data-clj-brand>长留玉</span> · <span data-clj-disclaimer></span></span>
+      </p>
     </div>
-
-    <footer class="footer">
-      <div class="footer__brand">
-        <span class="footer__dot" aria-hidden="true"></span>
-        <span data-clj-brand>长留玉</span>
-      </div>
-      <p class="footer__note" data-clj-disclaimer></p>
-    </footer>
 
   </div>
 

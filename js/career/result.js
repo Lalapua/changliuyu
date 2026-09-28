@@ -2,13 +2,13 @@
  * 长留玉 · 职业测试 · 结果页逻辑
  * ------------------------------------------------------------
  * 依赖：config.js → global.js → questions-*.js → careers-part*.js
- *      → scoring.js → data.js → result.js
+ *      → scoring.js → data.js → qr.js → result.js
  *
  * 职责：
  *   1. 读取答题快照，算分、匹配职业
- *   2. 渲染雷达图（纯 SVG，无第三方库）
+ *   2. 渲染雷达图（页面用纯 SVG，海报里用 canvas 画同一套几何）
  *   3. 渲染维度条 / 职业卡片 / 行动建议
- *   4. 分享：复制链接、Web Share、生成结果图片（html2canvas 懒加载 + Canvas 兜底）
+ *   4. 生成结果图片：单一的自绘 Canvas 渲染器（含二维码），零外部依赖
  * ============================================================ */
 (function () {
   'use strict';
@@ -74,7 +74,7 @@
     if (!rep.ok) console.warn('[长留玉] 数据自检发现问题：', rep);
 
     // 让分享出去的落地页直接就是结果页
-    document.title = buildShareTitle();
+    document.title = buildResultTitle();
   }
 
   function cacheEls() {
@@ -477,16 +477,14 @@
   }
 
   /* ============================================================
-   * 九、按钮与分享
+   * 九、按钮
    * ============================================================ */
 
-  function buildShareTitle() {
+  /** 结果页的标题，用「我的职业倾向是『X』」代替干巴巴的「我的测试结果」。
+   *  分享按钮已经下线，这里只服务于浏览器标签页标题。 */
+  function buildResultTitle() {
     var name = state.topCareer ? state.topCareer.name : '我的结果';
     return '我的职业倾向是「' + name + '」' + CFG.SHARE_TITLE_SUFFIX;
-  }
-
-  function buildShareUrl() {
-    return CLJ_ASSET('career/result.html');
   }
 
   function bindActions() {
@@ -500,105 +498,12 @@
       window.location.href = CLJ_ASSET('index.html');
     });
 
-    CLJ.qs('#btn-copy').addEventListener('click', function () {
-      CLJ.copy(buildShareUrl()).then(function (ok) {
-        CLJ.toast(ok ? '链接已复制，去粘贴给朋友吧' : '复制失败，请手动复制地址栏链接');
-      });
-    });
-
-    CLJ.qs('#btn-share').addEventListener('click', function () {
-      var payload = {
-        title: buildShareTitle(),
-        text: CFG.SHARE_TEXT,
-        url: buildShareUrl()
-      };
-      if (navigator.share) {
-        navigator.share(payload).catch(function () { /* 用户取消，不打扰 */ });
-      } else {
-        CLJ.copy(buildShareUrl()).then(function (ok) {
-          CLJ.toast(ok ? '当前环境不支持系统分享，链接已复制' : '分享失败，请手动复制链接');
-        });
-      }
-    });
-
     CLJ.qs('#btn-save-img').addEventListener('click', saveResultImage);
   }
 
   /* ------------------------------------------------------------
    * 结果图片
    * ---------------------------------------------------------- */
-
-  function buildPoster(scale) {
-    scale = scale || 1;
-    var sc = state.scores;
-    var c = state.topCareer;
-    var W = 420;
-
-    var poster = CLJ.el('div', { class: 'poster' });
-    poster.style.width = W + 'px';
-
-    // 品牌行
-    var brandRow = CLJ.el('div', { class: 'poster__brand' });
-    /* 这里刻意不用 <img>：海报里只要出现一张外部图片，
-     * 截出来的画布就有被跨域内容污染的风险，一旦污染，
-     * toBlob / toDataURL 会直接抛 SecurityError，图就存不下来了。
-     * 用 canvas 现画 logo，画布永远是干净的。 */
-    brandRow.appendChild(logoElement(26));
-    brandRow.appendChild(CLJ.el('span', { class: 'poster__brand-name', text: CFG.BRAND }));
-    brandRow.appendChild(CLJ.el('span', { class: 'poster__brand-en', text: CFG.BRAND_EN }));
-    poster.appendChild(brandRow);
-
-    poster.appendChild(CLJ.el('div', { class: 'poster__test-name', text: '你适合什么样的职业' }));
-    poster.appendChild(CLJ.el('div', { class: 'poster__code', text: headlineCode() + ' · ' + (state.version === 'full' ? '全量版' : '精简版') }));
-
-    // 最佳职业
-    if (c) {
-      var box = CLJ.el('div', { class: 'poster__career' }, [
-        CLJ.el('div', { class: 'poster__career-label', text: '最佳匹配职业' }),
-        CLJ.el('div', { class: 'poster__career-name', text: c.name }),
-        CLJ.el('div', { class: 'poster__career-meta', text: (c.category || '') + ' · 匹配度 ' + state.matches[0].fit + '%' }),
-        CLJ.el('div', { class: 'poster__career-desc', text: c.desc || '' })
-      ]);
-      poster.appendChild(box);
-    }
-
-    // 小型雷达图
-    var radarBox = CLJ.el('div', { class: 'poster__radar' });
-    radarBox.innerHTML = buildRadarSVG(sc.pct, 240);
-    poster.appendChild(radarBox);
-
-    // 维度条
-    var bars = CLJ.el('div', { class: 'poster__bars' });
-    sc.order.forEach(function (k) {
-      var d = S.dim(k);
-      var row = CLJ.el('div', { class: 'poster__bar-row' }, [
-        CLJ.el('span', { class: 'poster__bar-name', text: d.name }),
-        CLJ.el('span', { class: 'poster__bar-value t-num', text: sc.pct[k] + '%' })
-      ]);
-      var track = CLJ.el('div', { class: 'poster__bar-track' });
-      var fill = CLJ.el('div', { class: 'poster__bar-fill' });
-      fill.style.width = sc.pct[k] + '%';
-      track.appendChild(fill);
-      row.appendChild(track);
-      bars.appendChild(row);
-    });
-    poster.appendChild(bars);
-
-    // 底部
-    poster.appendChild(CLJ.el('div', { class: 'poster__footer' }, [
-      CLJ.el('div', { class: 'poster__foot-brand', text: CFG.POSTER_BRAND_LINE }),
-      CLJ.el('div', { class: 'poster__foot-url', text: prettyUrl() }),
-      CLJ.el('div', { class: 'poster__foot-note', text: CFG.DISCLAIMER })
-    ]));
-
-    if (scale !== 1) poster.style.transform = 'scale(' + scale + ')';
-
-    // 放到屏幕外渲染，不影响可见布局
-    var holder = CLJ.el('div', { class: 'poster-holder' });
-    holder.appendChild(poster);
-    document.body.appendChild(holder);
-    return holder;
-  }
 
   function prettyUrl() {
     var u = CFG.BASE_URL || '';
@@ -612,30 +517,20 @@
     return CFG.BRAND + '-职业测试-' + stamp + '.png';
   }
 
-  function ensureHtml2Canvas() {
-    if (window.html2canvas) return Promise.resolve(window.html2canvas);
-    // 主 CDN 失败时自动换备用 CDN，再不行就退回本地 Canvas 手绘方案
-    return CLJ.loadScript(CFG.CDN.html2canvas)
-      .catch(function () {
-        return CLJ.loadScript('https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js');
-      })
-      .then(function () {
-        if (!window.html2canvas) throw new Error('html2canvas 不可用');
-        return window.html2canvas;
-      });
-  }
-
   /* ------------------------------------------------------------
-   * 结果图片：多级降级 + 能说清的失败原因
+   * 结果图片：单一的自绘 Canvas 渲染器
    * ------------------------------------------------------------
-   * 管线分三级：
-   *   ① html2canvas 渲染真实 DOM —— 最还原，但依赖 CDN，且受跨域策略影响
-   *   ② 本地 Canvas 手绘        —— 零依赖、零跨域，断网也能出图
-   *   ③ 两级都失败              —— 把真实原因带出来，不再只丢一句「失败」
-   *
-   * 每一级都必须产出「能被安全导出的 canvas」才算通过：
-   * 被跨域图片污染过的画布调用 toBlob 会抛 SecurityError，那画布等于废的，
-   * 必须在交付之前就发现，否则用户只会看到一句莫名其妙的失败。
+   * 原来是三级降级：html2canvas 渲染真实 DOM → 本地 Canvas 手绘 → 报错。
+   * 现在把 html2canvas 整条路砍掉，只留自绘，理由有三个：
+   *   1. 它要联网从 CDN 拉 200KB，断网或内网环境下这一整条路直接作废；
+   *   2. 它把 DOM 克隆进 iframe 再截图，画面里只要有一张跨域图片就会污染
+   *      画布，之后 toBlob 抛 SecurityError，图必然存不下来 —— 之前线上
+   *      报「生成图片失败」就是这个原因；
+   *   3. 为了让它的渲染结果正确，还得额外维护一整套 .poster 样式，
+   *      两处容易走散。
+   * 自绘方案零依赖、离线可用、画布永远干净（海报里不放任何 <img>），
+   * 代价只是雷达图也得自己画 —— 那本来就是现成的三角函数。
+   * 出图分辨率取 2 倍（840px 宽），手机上看着是高清的。
    * ---------------------------------------------------------- */
 
   /** 把各种异常翻译成一句人话，直接显示在提示条里 */
@@ -668,43 +563,6 @@
     });
   }
 
-  /** 等字体就绪再截图，否则文字可能先用替身字体渲染；最多等 1.2s */
-  function waitFonts() {
-    var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-    return Promise.race([ready, new Promise(function (r) { setTimeout(r, 1200); })]);
-  }
-
-  /** ① html2canvas 渲染真实 DOM */
-  function html2canvasPoster() {
-    var holder = null;
-    function drop() { if (holder && holder.parentNode) holder.parentNode.removeChild(holder); }
-
-    return ensureHtml2Canvas()
-      .then(function (h2c) {
-        holder = buildPoster();
-        return waitFonts().then(function () {
-          return h2c(CLJ.qs('.poster', holder), {
-            backgroundColor: '#0B0B0F',
-            scale: 2,
-            useCORS: true,
-            allowTaint: false,
-            logging: false,
-            width: 420,
-            windowWidth: 420
-          });
-        });
-      })
-      .then(function (canvas) { drop(); return canvas; },
-            function (e) { drop(); throw e; });
-  }
-  html2canvasPoster.label = 'html2canvas';
-
-  /** ② 本地 Canvas 手绘兜底 */
-  function localPoster() {
-    return Promise.resolve().then(function () { return drawFallbackPoster(); });
-  }
-  localPoster.label = '本地Canvas';
-
   function saveResultImage() {
     if (state.busy) return;
     state.busy = true;
@@ -713,14 +571,10 @@
     btn.disabled = true;
     btn.textContent = '正在生成…';
 
-    var reasons = [];
-    var producers = [html2canvasPoster, localPoster];
-
     // 兜底保险：任何环节卡死，按钮都不会永远停在「正在生成…」
     var guard = setTimeout(function () {
-      if (!state.busy) return;
       finish();
-      CLJ.toast('生成超时了，可以重试或改用「复制链接」分享', 3200);
+      CLJ.toast('生成超时了，请重试', 3200);
     }, 20000);
 
     function finish() {
@@ -730,33 +584,24 @@
       btn.textContent = old;
     }
 
-    // 逐个 producer 尝试，直到有一个能产出「可安全导出」的画布
-    function attempt(i) {
-      if (i >= producers.length) return Promise.reject(new Error(reasons.join('；')));
-      var make = producers[i];
-      return make()
-        .then(function (canvas) {
-          return exportBlob(canvas).then(function (blob) {
-            return { canvas: canvas, blob: blob, by: make.label };
-          });
-        })
-        .catch(function (e) {
-          reasons.push(make.label + '：' + shortErr(e));
-          if (i === 0) console.warn('[长留玉] html2canvas 方案不可用，改用本地 Canvas 兜底：', e);
-          return attempt(i + 1);
-        });
+    var canvas;
+    try {
+      canvas = drawPoster();
+    } catch (e) {
+      console.error('[长留玉] 绘制结果图片失败：', e);
+      CLJ.toast('图片生成失败（' + shortErr(e) + '）', 4200);
+      finish();
+      return;
     }
 
-    attempt(0)
-      .then(function (r) {
-        if (r.by !== producers[0].label) {
-          console.info('[长留玉] 结果图片由「' + r.by + '」生成。失败原因链：' + reasons.join('；'));
-        }
-        return deliver(r.canvas, r.blob);
-      })
+    /* 先验一次「能不能安全导出」再交付：被污染的画布 toBlob 会抛
+     * SecurityError，那种画布是废的，早点发现比让用户看到一句
+     * 莫名其妙的失败要好。 */
+    exportBlob(canvas)
+      .then(function (blob) { return deliver(canvas, blob); })
       .catch(function (e) {
-        console.error('[长留玉] 生成结果图片失败：', e);
-        CLJ.toast('图片生成失败（' + shortErr(e) + '），可以先复制链接分享', 4200);
+        console.error('[长留玉] 导出结果图片失败：', e);
+        CLJ.toast('图片存不下来（' + shortErr(e) + '），可以截图保存', 4200);
       })
       .then(finish, finish);
   }
@@ -819,146 +664,288 @@
     return c;
   }
 
-  /** 返回一个已经画好品牌标识的 <canvas>，可直接塞进 DOM 当 logo 用。
-   *  内部按 2 倍密度绘制，高分屏上不会糊。 */
-  function logoElement(cssSize) {
-    var size = Math.max(16, Math.round(cssSize * 2));
-    var c = logoCanvas(size);
-    c.className = 'poster__mark';
-    c.style.width = cssSize + 'px';
-    c.style.height = cssSize + 'px';
-    return c;
+  /* ------------------------------------------------------------
+   * 海报字体与工具
+   * ---------------------------------------------------------- */
+  var POSTER_FONT = '"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif';
+
+  /** 二维码里编的地址。
+   *  优先用 config.js 里显式配置的对外地址 —— 本地预览时 BASE_URL 是
+   *  127.0.0.1，扫出来对别人没用，所以线上地址要单独配。 */
+  function qrUrl() {
+    return CFG.SITE_URL || CFG.BASE_URL || '';
   }
 
-  /** 本地 Canvas 兜底：不依赖任何第三方库，离线也能出图。
-   *  品牌标识用几何重绘而不是加载图片：只在离屏 canvas 上画路径，
-   *  不会污染主画布，所以在 file:// 下也能正常导出 PNG。 */
-  function drawFallbackPoster() {
-    var W = 840, H = 1400, P = 56;   // 2 倍图，直接给高清
-    var cv = document.createElement('canvas');
-    cv.width = W; cv.height = H;
-    var ctx = cv.getContext('2d');
-    var F = '"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif';
+  /** 画六维雷达图。几何和页面上那张 SVG 完全一样，只是换成 canvas 画。
+   *  本来只有 html2canvas 那条路能带上雷达图，自绘方案补上它才算不缩水。 */
+  function drawRadar(ctx, pct, cx, cy, R) {
+    var keys = S.DIM_KEYS, n = keys.length;
 
-    // 背景
-    var g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#14121F');
-    g.addColorStop(0.5, '#0B0B0F');
-    g.addColorStop(1, '#0B0B0F');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
+    function pt(i, ratio) {
+      var a = -Math.PI / 2 + i * (2 * Math.PI / n);
+      return [cx + Math.cos(a) * R * ratio, cy + Math.sin(a) * R * ratio];
+    }
 
-    // 顶部光晕
-    var rg = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, W * 0.9);
-    rg.addColorStop(0, 'rgba(108,92,231,0.30)');
-    rg.addColorStop(1, 'rgba(108,92,231,0)');
-    ctx.fillStyle = rg;
-    ctx.fillRect(0, 0, W, H * 0.55);
+    // 背后一层柔光
+    var halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.25);
+    halo.addColorStop(0, 'rgba(108,92,231,0.20)');
+    halo.addColorStop(1, 'rgba(108,92,231,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 1.25, 0, Math.PI * 2);
+    ctx.fillStyle = halo;
+    ctx.fill();
 
-    var y = P + 30;
+    // 四层网格
+    [0.25, 0.5, 0.75, 1].forEach(function (r) {
+      ctx.beginPath();
+      for (var i = 0; i < n; i++) {
+        var p = pt(i, r);
+        if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = r === 1 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.07)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
 
-    // 品牌标识（几何重绘）
-    ctx.drawImage(logoCanvas(44), P, y - 26, 44, 44);
-    ctx.fillStyle = '#A1A1AA';
-    ctx.font = '500 22px ' + F;
+    // 六条轴线
+    for (var i = 0; i < n; i++) {
+      var q = pt(i, 1);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(q[0], q[1]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // 数据多边形（最小值留一点余量，免得塌到圆心看不见）
+    var pts = [];
+    for (var j = 0; j < n; j++) {
+      var ratio = S.clamp(pct[keys[j]] || 0, 0, 100) / 100;
+      pts.push(pt(j, Math.max(ratio, 0.06)));
+    }
+    var fillGrad = ctx.createLinearGradient(cx, cy - R, cx, cy + R);
+    fillGrad.addColorStop(0, 'rgba(167,139,250,0.55)');
+    fillGrad.addColorStop(1, 'rgba(108,92,231,0.18)');
+    ctx.beginPath();
+    pts.forEach(function (p, i) { if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); });
+    ctx.closePath();
+    ctx.fillStyle = fillGrad;
+    ctx.fill();
+    ctx.strokeStyle = '#A78BFA';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // 顶点圆点
+    pts.forEach(function (p) {
+      ctx.beginPath();
+      ctx.arc(p[0], p[1], 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#F5F5F7';
+      ctx.fill();
+      ctx.strokeStyle = '#8B7CF6';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    });
+
+    // 轴标签：维度名 + 分值
+    for (var k = 0; k < n; k++) {
+      var lp = pt(k, (R + 44) / R);
+      var dx = lp[0] - cx, dy = lp[1] - cy;
+      ctx.textAlign = Math.abs(dx) < R * 0.22 ? 'center' : (dx > 0 ? 'left' : 'right');
+      var nameY = dy > R * 0.35 ? lp[1] + 14 : (dy < -R * 0.35 ? lp[1] - 6 : lp[1] - 14);
+      ctx.fillStyle = '#A1A1AA';
+      ctx.font = '400 19px ' + POSTER_FONT;
+      ctx.fillText(S.dim(keys[k]).name, lp[0], nameY);
+      ctx.fillStyle = '#F5F5F7';
+      ctx.font = '700 23px ' + POSTER_FONT;
+      ctx.fillText(String(pct[keys[k]] || 0), lp[0], nameY + 28);
+    }
     ctx.textAlign = 'left';
-    ctx.fillText('长留玉', P + 60, y + 4);
-    ctx.fillStyle = '#4B4B55';
-    ctx.font = '400 16px ' + F;
-    ctx.fillText('C H A N G   L I U   Y U', P + 138, y + 4);
+  }
 
-    y += 70;
-    ctx.fillStyle = '#6E6E78';
-    ctx.font = '400 20px ' + F;
-    ctx.fillText('你适合什么样的职业 · ' + (state.version === 'full' ? '全量版' : '精简版'), P, y);
+  /** 画二维码。等级 M（容错与尺寸的平衡），四周留 4 模块静默区。
+   *  必须画在白底上：深色底会让扫码器读不出来。 */
+  function drawQR(ctx, url, x, y, size) {
+    var qr = CLJ_QR.encode(url, 'M');
+    var quiet = 4;
+    var total = qr.size + quiet * 2;
+    var cell = Math.max(2, Math.floor(size / total));
+    var real = cell * total;
+    var ox = x + Math.floor((size - real) / 2);
+    var oy = y + Math.floor((size - real) / 2);
 
-    y += 56;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(ox, oy, real, real);
+
+    ctx.fillStyle = '#0B0B0F';
+    for (var r = 0; r < qr.size; r++) {
+      for (var c = 0; c < qr.size; c++) {
+        if (qr.modules[r][c]) {
+          ctx.fillRect(ox + (c + quiet) * cell, oy + (r + quiet) * cell, cell, cell);
+        }
+      }
+    }
+    return real;
+  }
+
+  /** 结果海报：单一的自绘 Canvas 渲染器（2 倍图）。
+   *  海报里**不放任何 <img>** —— 一旦有跨域图片，画布被污染后 toBlob 会抛
+   *  SecurityError，图就存不下来了。品牌标识用 logoCanvas() 几何重绘。
+   *  高度不写死：按内容画完再裁掉多余部分，加内容不用去调常数。 */
+  function drawPoster() {
+    var W = 840, P = 56;
+    var cv = document.createElement('canvas');
+    cv.width = W;
+    cv.height = 2600;                       // 先给足，画完按实际用量裁
+    var ctx = cv.getContext('2d');
+    var F = POSTER_FONT;
+    var sc = state.scores;
+
+    /* --- 背景 --- */
+    var bg = ctx.createLinearGradient(0, 0, 0, cv.height);
+    bg.addColorStop(0, '#16131F');
+    bg.addColorStop(0.42, '#0B0B0F');
+    bg.addColorStop(1, '#0B0B0F');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, cv.height);
+    var glow = ctx.createRadialGradient(W / 2, 0, 0, W / 2, 0, W * 0.9);
+    glow.addColorStop(0, 'rgba(108,92,231,0.30)');
+    glow.addColorStop(1, 'rgba(108,92,231,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, cv.height * 0.4);
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    var y = P;
+
+    /* --- 品牌行 --- */
+    ctx.drawImage(logoCanvas(52), P, y, 52, 52);
     ctx.fillStyle = '#F5F5F7';
-    ctx.font = '700 44px ' + F;
-    var head = headlineCode();
-    ctx.fillText(head, P, y);
+    ctx.font = '700 27px ' + F;
+    ctx.fillText(CFG.BRAND, P + 68, y + 36);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#6E6E78';
+    ctx.font = '400 15px ' + F;
+    ctx.fillText(CFG.BRAND_EN, W - P, y + 36);
+    ctx.textAlign = 'left';
+    y += 52 + 42;
 
+    /* --- 测试名 --- */
+    ctx.fillStyle = '#A1A1AA';
+    ctx.font = '400 21px ' + F;
+    ctx.fillText('你适合什么样的职业 · ' + (state.version === 'full' ? '全量版 120 题' : '精简版 30 题'), P, y);
+    y += 54;
+
+    /* --- 代码位：正常是霍兰德代码，六维持平时是投入等级 --- */
+    var head = headlineCode();
+    ctx.fillStyle = '#A78BFA';
+    ctx.font = '800 62px ' + F;
+    ctx.fillText(head, P, y + 46);
+    var headW = ctx.measureText(head).width;
     ctx.fillStyle = '#6E6E78';
     ctx.font = '400 18px ' + F;
-    ctx.fillText(S.uniformProfile(state.scores) ? '整体投入度' : '霍兰德兴趣代码', P + 150, y - 4);
+    ctx.fillText(S.uniformProfile(sc) ? '整体投入度' : '霍兰德兴趣代码', P + headW + 18, y + 46);
+    y += 46 + 46;
 
-    // 最佳职业
+    /* --- 最佳匹配职业 --- */
     if (state.topCareer) {
-      y += 60;
       ctx.fillStyle = '#A78BFA';
       ctx.font = '400 18px ' + F;
       ctx.fillText('最佳匹配职业', P, y);
+      y += 46;
 
-      y += 52;
       ctx.fillStyle = '#F5F5F7';
-      ctx.font = '700 40px ' + F;
-      ctx.fillText(state.topCareer.name, P, y);
-
+      ctx.font = '700 46px ' + F;
+      ctx.fillText(state.topCareer.name, P, y + 32);
       var nameW = ctx.measureText(state.topCareer.name).width;
       ctx.fillStyle = '#34D399';
-      ctx.font = '600 24px ' + F;
-      ctx.fillText(state.matches[0].fit + '%', P + nameW + 20, y);
+      ctx.font = '600 26px ' + F;
+      ctx.fillText(state.matches[0].fit + '%', P + nameW + 20, y + 32);
+      y += 32 + 36;
 
-      y += 40;
       ctx.fillStyle = '#A1A1AA';
       ctx.font = '400 20px ' + F;
-      wrapText(ctx, state.topCareer.desc || '', P, y, W - P * 2, 30, 2);
-      y += 62;
+      y = wrapText(ctx, (state.topCareer.category || '') + ' · ' + (state.topCareer.desc || ''),
+                   P, y, W - P * 2, 32, 2);
+      y += 14;
     }
 
-    // 维度条
-    state.scores.order.forEach(function (k) {
-      var d = S.dim(k);
-      var val = state.scores.pct[k];
-      var barW = W - P * 2;
+    /* --- 雷达图 --- */
+    var radarSize = 400;
+    drawRadar(ctx, sc.pct, W / 2, y + radarSize / 2 - 10, radarSize / 2 - 52);
+    y += radarSize;
 
+    /* --- 六维进度条 --- */
+    var barW = W - P * 2;
+    sc.order.forEach(function (k) {
+      var d = S.dim(k);
+      var val = sc.pct[k];
       ctx.fillStyle = '#A1A1AA';
       ctx.font = '400 20px ' + F;
       ctx.fillText(d.name, P, y);
-
+      ctx.textAlign = 'right';
       ctx.fillStyle = '#F5F5F7';
       ctx.font = '600 20px ' + F;
-      ctx.textAlign = 'right';
       ctx.fillText(val + '%', P + barW, y);
       ctx.textAlign = 'left';
 
       ctx.fillStyle = 'rgba(255,255,255,0.08)';
-      roundRect(ctx, P, y + 14, barW, 10, 5);
+      roundRect(ctx, P, y + 16, barW, 10, 5);
       ctx.fill();
-
       var fg = ctx.createLinearGradient(P, 0, P + barW, 0);
       fg.addColorStop(0, '#6C5CE7');
-      fg.addColorStop(1, '#A78BFA');
+      fg.addColorStop(0.58, '#A78BFA');
+      fg.addColorStop(1, '#22D3EE');
       ctx.fillStyle = fg;
-      roundRect(ctx, P, y + 14, Math.max(barW * val / 100, 8), 10, 5);
+      roundRect(ctx, P, y + 16, Math.max(barW * val / 100, 10), 10, 5);
       ctx.fill();
-
-      y += 56;
+      y += 58;
     });
 
-    // 分隔线
-    y += 40;
+    /* --- 二维码：扫一下直接回首页 --- */
+    y += 26;
+    var QR = 216;
+    drawQR(ctx, qrUrl(), P, y, QR);
+    var tx = P + QR + 40;
+    ctx.fillStyle = '#F5F5F7';
+    ctx.font = '700 30px ' + F;
+    ctx.fillText('扫码打开' + CFG.BRAND, tx, y + 74);
+    ctx.fillStyle = '#A1A1AA';
+    ctx.font = '400 21px ' + F;
+    ctx.fillText('让朋友也来测一测', tx, y + 116);
+    ctx.fillStyle = '#6E6E78';
+    ctx.font = '400 18px ' + F;
+    ctx.fillText(prettyUrl(), tx, y + 154);
+    y += QR + 26;
+
+    /* --- 底部 --- */
     ctx.strokeStyle = 'rgba(255,255,255,0.10)';
     ctx.beginPath();
-    ctx.moveTo(P, y); ctx.lineTo(W - P, y); ctx.stroke();
+    ctx.moveTo(P, y);
+    ctx.lineTo(W - P, y);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    y += 42;
 
-    // 底部
-    y += 40;
     ctx.fillStyle = '#A78BFA';
     ctx.font = '400 20px ' + F;
     ctx.fillText(CFG.POSTER_BRAND_LINE, P, y);
-
     y += 32;
-    ctx.fillStyle = '#6E6E78';
-    ctx.font = '400 18px ' + F;
-    ctx.fillText(prettyUrl(), P, y);
 
-    y += 30;
     ctx.fillStyle = '#4B4B55';
     ctx.font = '400 16px ' + F;
     ctx.fillText(CFG.DISCLAIMER, P, y);
+    y += 26;
 
-    return cv;
+    /* --- 按实际用量裁掉下面的空白，避免海报底下一大块空的 --- */
+    var H = Math.min(cv.height, Math.round(y + P));
+    var out = document.createElement('canvas');
+    out.width = W;
+    out.height = H;
+    out.getContext('2d').drawImage(cv, 0, 0, W, H, 0, 0, W, H);
+    return out;
   }
 
   function roundRect(ctx, x, y, w, h, r) {
@@ -1013,7 +1000,7 @@
       var canShare = false;
       try { canShare = navigator.canShare({ files: [file] }); } catch (e) { canShare = false; }
       if (canShare) {
-        return navigator.share({ files: [file], title: buildShareTitle(), text: CFG.SHARE_TEXT })
+        return navigator.share({ files: [file], title: buildResultTitle(), text: CFG.SHARE_TEXT })
           .then(function () { CLJ.toast('已唤起系统分享'); })
           .catch(function () { download(); });
       }

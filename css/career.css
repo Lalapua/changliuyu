@@ -6,10 +6,11 @@
  *
  * 目录：
  *   1. 开始页
- *   2. 答题页
+ *   2. 答题页（含 2.1 纵向空间的两档分配）
  *   3. 结果页
- *   4. 分享海报
- *   （首页与模块列表页样式已拆到 site.css）
+ *   4. 保存图片的兜底遮罩
+ *   （首页与模块列表页样式已拆到 site.css；
+ *     分享海报的样式已删 —— 结果图片改成纯 canvas 自绘，不再需要 DOM 海报）
  * ============================================================ */
 
 /* ============================================================
@@ -84,7 +85,7 @@
 }
 
 /* ============================================================
- * 3. 答题页
+ * 2. 答题页
  * ============================================================ */
 .quiz-top {
   display: flex;
@@ -219,7 +220,62 @@
 }
 
 /* ============================================================
- * 4. 结果页
+ * 2.1 答题页：纵向空间的两档分配
+ * ------------------------------------------------------------
+ * 实测基线（用 iframe 模拟真实手机视口量的；headless 的 --window-size 有
+ * 最小宽度，直接设 375 会被钳到 ~500，量到的是桌面布局，这个坑踩过）：
+ *   原始版本在 375×667 上总高 858px、要滚 191px，在 390×844 上也还差 14px。
+ *
+ * 所以分两档，而不是一刀切压扁：
+ *   默认（宽松）—— 内容约 790px，尽量保留原始观感；
+ *   max-height:740px（紧凑）—— 只有 SE 这类矮屏才触发，收到约 560px 保证不滚。
+ *
+ * 页脚那一行（免责声明）在两种档位下都收进了提示区，见 test.html ——
+ * 它原来单独占 63px，在手机上就是白吃一屏。
+ * 选项 min-height 特意留得比 44px 的触控下限宽裕，别再为了省高度往下压。
+ * ============================================================ */
+.quiz-page .app {
+  padding: calc(var(--sp-3) + var(--safe-top)) var(--sp-2) calc(var(--sp-3) + var(--safe-bottom));
+  gap: var(--sp-2);
+}
+.quiz-page .quiz-main { gap: var(--sp-3); }
+.quiz-page .question-card { min-height: 132px; }
+.quiz-page .options { gap: 12px; }
+.quiz-page .opt { min-height: 58px; padding: 14px var(--sp-2); }
+.quiz-page .quiz-nav__hint { margin-top: 10px; }
+/* 免责声明原来单独占一行页脚（63px），并进提示区后省下的量还给选项 */
+.quiz-page .quiz-nav__legal {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-3);
+  opacity: 0.75;
+}
+
+/* 矮屏兜底：SE / 小屏安卓在真实浏览器里可视高只有 ~550-600，
+ * 这时才把各项收到最紧，换取「一屏装下、不用滚」。 */
+@media (max-height: 740px) {
+  .quiz-page .app {
+    padding: calc(14px + var(--safe-top)) var(--sp-2) calc(14px + var(--safe-bottom));
+    gap: 9px;
+  }
+  .quiz-page .quiz-progress { gap: 5px; }
+  .quiz-page .quiz-progress__bar { height: 4px; }
+  .quiz-page .quiz-main { gap: 10px; }
+  .quiz-page .question-card { min-height: 76px; }
+  .quiz-page .question-card__meta { margin-bottom: 6px; }
+  .quiz-page .question-card__text { font-size: 19px; line-height: 1.5; }
+  .quiz-page .options { gap: 8px; }
+  .quiz-page .opt { min-height: 46px; padding: 10px 14px; gap: 10px; }
+  .quiz-page .opt__label { font-size: 14.5px; }
+  .quiz-page .opt__key { width: 22px; height: 22px; }
+  .quiz-page .quiz-nav .btn { min-height: 42px; padding: 0 var(--sp-2); font-size: 15px; }
+  .quiz-page .quiz-nav__hint { font-size: 11px; margin-top: 6px; line-height: 1.5; }
+  .quiz-page .quiz-nav__legal { margin-top: 3px; font-size: 10px; }
+}
+
+/* ============================================================
+ * 3. 结果页
  * ============================================================ */
 .result-hero { display: flex; flex-direction: column; gap: var(--sp-2); }
 .result-hero__code {
@@ -354,74 +410,7 @@
 .stat__label { font-size: 11px; color: var(--text-3); margin-top: 3px; }
 
 /* ============================================================
- * 5. 分享海报
- * ------------------------------------------------------------
- * 平时藏在屏幕外，截图时才生成。所有样式写死数值，
- * 保证 html2canvas 渲染时不会被媒体查询影响。
- * ============================================================ */
-.poster-holder {
-  position: fixed;
-  left: -20000px;
-  top: 0;
-  z-index: -1;
-  pointer-events: none;
-}
-.poster {
-  box-sizing: border-box;
-  padding: 32px 28px;
-  background: linear-gradient(180deg, #16131F 0%, #0B0B0F 42%, #0B0B0F 100%);
-  font-family: var(--font);
-  color: #F5F5F7;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-.poster__brand { display: flex; align-items: center; gap: 10px; }
-/* 海报里的品牌标识是 canvas 现画的（不走 <img>），这里只负责尺寸 */
-.poster__mark { flex: 0 0 auto; display: block; }
-.poster__brand-name { font-size: 15px; font-weight: 700; letter-spacing: 0.16em; color: #F5F5F7; }
-.poster__brand-en { font-size: 9px; letter-spacing: 0.36em; color: #6E6E78; margin-left: auto; }
-.poster__test-name { font-size: 20px; font-weight: 700; letter-spacing: 0.02em; }
-.poster__code {
-  font-size: 34px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: #A78BFA;
-  line-height: 1;
-  margin-top: -6px;
-}
-.poster__career {
-  padding: 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(139, 124, 246, 0.32);
-}
-.poster__career-label { font-size: 10px; letter-spacing: 0.16em; color: #A78BFA; }
-.poster__career-name { font-size: 24px; font-weight: 700; margin-top: 6px; }
-.poster__career-meta { font-size: 11px; color: #A1A1AA; margin-top: 4px; }
-.poster__career-desc { font-size: 12px; color: #A1A1AA; line-height: 1.7; margin-top: 8px; }
-.poster__radar { display: flex; justify-content: center; }
-.poster__radar .radar { max-width: 230px; }
-.poster__bars { display: flex; flex-direction: column; gap: 10px; }
-.poster__bar-row { display: grid; grid-template-columns: 56px 1fr 34px; align-items: center; gap: 8px; }
-.poster__bar-name { font-size: 11px; color: #A1A1AA; }
-.poster__bar-value { font-size: 11px; color: #F5F5F7; text-align: right; font-weight: 600; }
-.poster__bar-track { height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
-.poster__bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #6C5CE7, #A78BFA 58%, #22D3EE); }
-.poster__footer {
-  margin-top: 4px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.poster__foot-brand { font-size: 12px; color: #A78BFA; letter-spacing: 0.08em; }
-.poster__foot-url { font-size: 11px; color: #6E6E78; word-break: break-all; }
-.poster__foot-note { font-size: 10px; color: #4B4B55; line-height: 1.6; }
-
-/* ============================================================
- * 6. 保存图片的兜底遮罩
+ * 4. 保存图片的兜底遮罩
  * ------------------------------------------------------------
  * 内嵌 iframe / 微信内置浏览器里 <a download> 会被静默拦掉，
  * 这时不搞「假装已保存」，直接把图铺出来让用户长按存。
@@ -457,7 +446,7 @@
 .save-overlay__close { width: auto; min-width: 108px; }
 
 /* ============================================================
- * 7. 小屏微调
+ * 5. 小屏微调
  * ============================================================ */
 @media (max-width: 360px) {
   .question-card__text { font-size: 19px; }
