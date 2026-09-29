@@ -505,11 +505,6 @@
    * 结果图片
    * ---------------------------------------------------------- */
 
-  function prettyUrl() {
-    var u = CFG.BASE_URL || '';
-    if (!u || u === './') return CFG.BRAND + ' · 职业测试';
-    return u.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  }
 
   function filename() {
     var d = new Date();
@@ -676,10 +671,18 @@
     return CFG.SITE_URL || CFG.BASE_URL || '';
   }
 
-  /** 画六维雷达图。几何和页面上那张 SVG 完全一样，只是换成 canvas 画。
-   *  本来只有 html2canvas 那条路能带上雷达图，自绘方案补上它才算不缩水。 */
-  function drawRadar(ctx, pct, cx, cy, R) {
+  /** 画六维雷达图。
+   *  topY 是这块的上边界，**返回值是这块的下边界** —— 由实际画出来的文字位置算出来，
+   *  不是手填的常数。之前这里就是栽在手填上：块高按半径算，忘了轴标签还要往外
+   *  伸出「维度名 + 分值」两行，结果底部的标签被下一块压住了。
+   *  底部标签的落点由下面的 LABEL_PAD / GAP_* 决定，改字号也不会再错位。 */
+  function drawRadar(ctx, pct, cx, topY, R) {
     var keys = S.DIM_KEYS, n = keys.length;
+    var LABEL_PAD = 46;          // 标签相对半径再往外推多少
+    var GAP_OUT = 20;            // 下方标签再往下让多少，别贴着图形
+    var GAP_IN = 26;             // 上方/侧边标签往上让多少
+    var LINE = 26;               // 名称与分值两行之间的行距
+    var cy = topY + R + LABEL_PAD + LINE;   // 圆心：给顶部标签留出位置
 
     function pt(i, ratio) {
       var a = -Math.PI / 2 + i * (2 * Math.PI / n);
@@ -687,11 +690,11 @@
     }
 
     // 背后一层柔光
-    var halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.25);
-    halo.addColorStop(0, 'rgba(108,92,231,0.20)');
+    var halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.3);
+    halo.addColorStop(0, 'rgba(108,92,231,0.22)');
     halo.addColorStop(1, 'rgba(108,92,231,0)');
     ctx.beginPath();
-    ctx.arc(cx, cy, R * 1.25, 0, Math.PI * 2);
+    ctx.arc(cx, cy, R * 1.3, 0, Math.PI * 2);
     ctx.fillStyle = halo;
     ctx.fill();
 
@@ -749,26 +752,47 @@
       ctx.stroke();
     });
 
-    // 轴标签：维度名 + 分值
+    // 轴标签：维度名 + 分值。按顶点所在方位决定往上还是往下排
+    var maxBottom = cy;
     for (var k = 0; k < n; k++) {
-      var lp = pt(k, (R + 44) / R);
+      var lp = pt(k, (R + LABEL_PAD) / R);
       var dx = lp[0] - cx, dy = lp[1] - cy;
       ctx.textAlign = Math.abs(dx) < R * 0.22 ? 'center' : (dx > 0 ? 'left' : 'right');
-      var nameY = dy > R * 0.35 ? lp[1] + 14 : (dy < -R * 0.35 ? lp[1] - 6 : lp[1] - 14);
+      var nameY = dy > 20 ? lp[1] + GAP_OUT : lp[1] - GAP_IN;
       ctx.fillStyle = '#A1A1AA';
       ctx.font = '400 19px ' + POSTER_FONT;
       ctx.fillText(S.dim(keys[k]).name, lp[0], nameY);
+      var valY = nameY + LINE;
       ctx.fillStyle = '#F5F5F7';
       ctx.font = '700 23px ' + POSTER_FONT;
-      ctx.fillText(String(pct[keys[k]] || 0), lp[0], nameY + 28);
+      ctx.fillText(String(pct[keys[k]] || 0), lp[0], valY);
+      maxBottom = Math.max(maxBottom, valY);
     }
     ctx.textAlign = 'left';
+    /* 多留 18px：底部标签是紧贴下边界的，余量太小会显得被下一块「顶」住 */
+    return maxBottom + 18;
   }
 
-  /** 画二维码。等级 M（容错与尺寸的平衡），四周留 4 模块静默区。
-   *  必须画在白底上：深色底会让扫码器读不出来。 */
+  /** 画二维码。风格上**反相 + 圆润**，和站点的深色紫调一致：
+   *    · 没有白色底板，码直接落在海报的深色背景上；
+   *    · 数据点画成圆点，定位图形画成圆角环 —— 一处直角方块都没有；
+   *    · 模块颜色是淡紫 → 浅蓝的对角渐变（#C4B5FD → #93C5FD）。
+   *
+   *  「为什么这么画还能扫出来」是硬约束，不能为了好看让步：
+   *    · 反相二维码（浅色码点 + 深色底）是 ISO/IEC 18004 认可的方案，
+   *      现代手机相机（iOS 相机、微信、Google Lens）都能识别；
+   *    · 对比度：模块亮度约 0.6，背景 #0B0B0F 亮度约 0.004，对比度约 13:1，
+   *      远高于扫码所需的 3:1（见 tools/verify-poster.js 的对比度断言）；
+   *    · 静默区：码点外仍留满 4 个模块的纯背景色，周围不放任何文字线条
+   *      （drawPoster 里给这块留了 ≥30px 的空白）；
+   *    · 三个定位图形保持严格的 1:1:3:1:1 比例：圆角只削掉四个角，
+   *      中心线扫过去仍是 1:1:3:1:1 —— 那是扫码器用来定位的生命线。
+   *  纠错档取 config 的 QR_ECC_LEVEL（Q，可扛 25% 破损），为圆点造型留足余量。
+   *
+   *  返回几何信息，drawPoster 会把它挂在 canvas 上，供自检脚本精确定位
+   *  （反相且没有底板之后，「找白色底板」那套定位办法就失效了）。 */
   function drawQR(ctx, url, x, y, size) {
-    var qr = CLJ_QR.encode(url, 'M');
+    var qr = CLJ_QR.encode(url, CFG.QR_ECC_LEVEL || 'Q');
     var quiet = 4;
     var total = qr.size + quiet * 2;
     var cell = Math.max(2, Math.floor(size / total));
@@ -776,24 +800,57 @@
     var ox = x + Math.floor((size - real) / 2);
     var oy = y + Math.floor((size - real) / 2);
 
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(ox, oy, real, real);
+    /* 模块颜色：对角渐变，两端亮度都足够高 */
+    var grad = ctx.createLinearGradient(ox, oy, ox + real, oy + real);
+    grad.addColorStop(0, '#C4B5FD');
+    grad.addColorStop(1, '#93C5FD');
+    ctx.fillStyle = grad;
+    ctx.strokeStyle = grad;
 
-    ctx.fillStyle = '#0B0B0F';
+    function mx(c) { return ox + (c + quiet) * cell; }
+    function my(r) { return oy + (r + quiet) * cell; }
+
+    /* 定位图形：**外沿圆角、内沿方正**。
+     * 用「圆角外轮廓 + 方正内轮廓」的奇偶填充造出这个环。
+     * 内圈必须方正 —— 标准里这个环只有 1 格厚，内圈的角一旦被圆弧鼓出去，
+     * 就会把本该留空的 (1,1) 这类格子染上墨（逐格比对直接报错，真踩过）。
+     * 外圆角半径要留足余量：半径 r 下，角上模块中心距圆弧只有
+     * r − √2·(r − 0.5) 格。取 1.4 时只剩 0.13 格（约 0.8px），
+     * 抗锯齿一糊就掉到判定阈值以下，三个定位图形的右下角全被判成空格。
+     * 取 1.0 有 0.29 格余量。理论上限是 1.7，但那是「刚好贴边」，不能用。 */
+    function finder(top, left) {
+      var x0 = mx(left), y0 = my(top), c = cell;
+      ctx.beginPath();
+      roundRect(ctx, x0, y0, c * 7, c * 7, c * 1.0);   // 外轮廓：圆角
+      ctx.rect(x0 + c, y0 + c, c * 5, c * 5);          // 内轮廓：方角（空洞）
+      ctx.fill('evenodd');
+      roundRect(ctx, x0 + c * 2, y0 + c * 2, c * 3, c * 3, c * 0.8);   // 内核
+      ctx.fill();
+    }
+    function inFinder(r, c) {
+      return (r < 7 && c < 7) || (r < 7 && c >= qr.size - 7) || (r >= qr.size - 7 && c < 7);
+    }
+
+    /* 数据点：正圆。
+     * 半径取 0.47 格（面积约占 69%）—— 再小墨量就不够了，再大相邻点会粘连。
+     * 扫码器读的是每格中心，圆心正在中心，所以扫得出来；圆点造型本身也是
+     * 业界常见的二维码风格。纠错档用 Q 就是为了给这种造型留容错余量。 */
+    var dotR = cell * 0.47;
     for (var r = 0; r < qr.size; r++) {
       for (var c = 0; c < qr.size; c++) {
-        if (qr.modules[r][c]) {
-          ctx.fillRect(ox + (c + quiet) * cell, oy + (r + quiet) * cell, cell, cell);
-        }
+        if (!qr.modules[r][c] || inFinder(r, c)) continue;
+        ctx.beginPath();
+        ctx.arc(mx(c) + cell / 2, my(r) + cell / 2, dotR, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
-    return real;
-  }
 
-  /** 结果海报：单一的自绘 Canvas 渲染器（2 倍图）。
-   *  海报里**不放任何 <img>** —— 一旦有跨域图片，画布被污染后 toBlob 会抛
-   *  SecurityError，图就存不下来了。品牌标识用 logoCanvas() 几何重绘。
-   *  高度不写死：按内容画完再裁掉多余部分，加内容不用去调常数。 */
+    finder(0, 0);
+    finder(0, qr.size - 7);
+    finder(qr.size - 7, 0);
+
+    return { x: ox, y: oy, size: real, cell: cell, modules: qr.size, level: CFG.QR_ECC_LEVEL || 'Q' };
+  }
   function drawPoster() {
     var W = 840, P = 56;
     var cv = document.createElement('canvas');
@@ -869,58 +926,78 @@
       ctx.font = '400 20px ' + F;
       y = wrapText(ctx, (state.topCareer.category || '') + ' · ' + (state.topCareer.desc || ''),
                    P, y, W - P * 2, 32, 2);
-      y += 14;
+      y += 10;
     }
 
-    /* --- 雷达图 --- */
-    var radarSize = 400;
-    drawRadar(ctx, sc.pct, W / 2, y + radarSize / 2 - 10, radarSize / 2 - 52);
-    y += radarSize;
+    /* --- 雷达图：块高由 drawRadar 的返回值决定，不再手填 --- */
+    y += 14;
+    y = drawRadar(ctx, sc.pct, W / 2, y, 128);
+    y += 6;
 
-    /* --- 六维进度条 --- */
-    var barW = W - P * 2;
-    sc.order.forEach(function (k) {
-      var d = S.dim(k);
-      var val = sc.pct[k];
-      ctx.fillStyle = '#A1A1AA';
-      ctx.font = '400 20px ' + F;
-      ctx.fillText(d.name, P, y);
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#F5F5F7';
-      ctx.font = '600 20px ' + F;
-      ctx.fillText(val + '%', P + barW, y);
-      ctx.textAlign = 'left';
+    /* --- 可能也适合：Top2 / Top3 ---
+     * 这里原来是六条维度条，和上面的雷达图是同一份数据，在分享图上纯属重复；
+     * 换成备选职业，信息量更大，也不跟雷达图打架。 */
+    var alts = state.matches.slice(1, 3);
+    if (alts.length) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.beginPath();
+      ctx.moveTo(P, y);
+      ctx.lineTo(W - P, y);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      y += 44;
 
-      ctx.fillStyle = 'rgba(255,255,255,0.08)';
-      roundRect(ctx, P, y + 16, barW, 10, 5);
-      ctx.fill();
-      var fg = ctx.createLinearGradient(P, 0, P + barW, 0);
-      fg.addColorStop(0, '#6C5CE7');
-      fg.addColorStop(0.58, '#A78BFA');
-      fg.addColorStop(1, '#22D3EE');
-      ctx.fillStyle = fg;
-      roundRect(ctx, P, y + 16, Math.max(barW * val / 100, 10), 10, 5);
-      ctx.fill();
-      y += 58;
-    });
+      ctx.fillStyle = '#A78BFA';
+      ctx.font = '400 18px ' + F;
+      ctx.fillText('可能也适合', P, y);
+      y += 42;
 
-    /* --- 二维码：扫一下直接回首页 --- */
-    y += 26;
-    var QR = 216;
-    drawQR(ctx, qrUrl(), P, y, QR);
-    var tx = P + QR + 40;
+      alts.forEach(function (m) {
+        ctx.fillStyle = '#F5F5F7';
+        ctx.font = '600 25px ' + F;
+        ctx.fillText(m.career.name, P, y);
+        var aw = ctx.measureText(m.career.name).width;
+        if (m.career.category) {
+          ctx.fillStyle = '#6E6E78';
+          ctx.font = '400 18px ' + F;
+          ctx.fillText(m.career.category, P + aw + 14, y);
+        }
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#22D3EE';
+        ctx.font = '700 25px ' + F;
+        ctx.fillText(m.fit + '%', W - P, y);
+        ctx.textAlign = 'left';
+        y += 22;
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.beginPath();
+        ctx.moveTo(P, y);
+        ctx.lineTo(W - P, y);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        y += 34;
+      });
+    }
+
+    /* --- 二维码：扫一下直达首页。
+     * 文案不提品牌名 —— 上面品牌行已经出现过一次，海报上反复念名字很啰嗦。
+     * 现在没有白色底板，码直接落在深色背景上，所以四周必须留出干净的背景：
+     * 静默区要求 4 个模块（约 24px）之内不能有任何文字或线条，上下各留 32px。 */
+    y += 32;
+    /* 300px 的框 → 格子 7px。再小圆点在缩略图上就糊成小方块了，
+     * 圆润的观感出不来，扫码余量也更小。 */
+    var QR = 300;
+    var qrRect = drawQR(ctx, qrUrl(), P, y, QR);
+    var tx = P + QR + 44;
     ctx.fillStyle = '#F5F5F7';
-    ctx.font = '700 30px ' + F;
-    ctx.fillText('扫码打开' + CFG.BRAND, tx, y + 74);
+    ctx.font = '700 33px ' + F;
+    ctx.fillText('看看你是哪种职业人', tx, y + 96);
     ctx.fillStyle = '#A1A1AA';
     ctx.font = '400 21px ' + F;
-    ctx.fillText('让朋友也来测一测', tx, y + 116);
-    ctx.fillStyle = '#6E6E78';
-    ctx.font = '400 18px ' + F;
-    ctx.fillText(prettyUrl(), tx, y + 154);
-    y += QR + 26;
+    ctx.fillText('扫码或长按识别都行', tx, y + 140);
+    y += QR + 32;
 
-    /* --- 底部 --- */
+    /* --- 底部：只留品牌语，不再重复品牌名 --- */
     ctx.strokeStyle = 'rgba(255,255,255,0.10)';
     ctx.beginPath();
     ctx.moveTo(P, y);
@@ -930,8 +1007,8 @@
     y += 42;
 
     ctx.fillStyle = '#A78BFA';
-    ctx.font = '400 20px ' + F;
-    ctx.fillText(CFG.POSTER_BRAND_LINE, P, y);
+    ctx.font = '400 21px ' + F;
+    ctx.fillText(CFG.POSTER_BRAND_LINE.replace(/^[^·]*·\s*/, ''), P, y);
     y += 32;
 
     ctx.fillStyle = '#4B4B55';
@@ -945,6 +1022,10 @@
     out.width = W;
     out.height = H;
     out.getContext('2d').drawImage(cv, 0, 0, W, H, 0, 0, W, H);
+    /* 把二维码的落点挂在 canvas 上。反相 + 无底板之后，「扫纯白像素找底板」
+     * 那套定位办法就失效了，自检脚本靠这个元信息才能精确地逐格比对。
+     * 只是随画布带出的一段布局信息，不影响任何显示或保存逻辑。 */
+    out.__qrRect = qrRect;
     return out;
   }
 
