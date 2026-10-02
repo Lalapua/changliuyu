@@ -205,6 +205,31 @@
     // 站点左上角/页脚的品牌强曝光
     CLJ.qsa('[data-clj-home]').forEach(function (n) { n.setAttribute('href', CLJ_ASSET('index.html')); });
 
+    /* 返回按钮：**有来路就回上一页**，没有来路才按 href 里的固定地址走。
+     *
+     * 页面写法：<a href="<兜底地址>" data-clj-back>← 返回</a>
+     *
+     * 为什么不能只写固定地址：用户是 首页 → 测试模块页 → 开始页 这么进来的，
+     * 一个写死的「返回首页」会直接跳过模块页；而答题页写死「返回开始页」，
+     * 从别处进来的人又被送到一个没去过的地方。原则是「回你刚才待的地方」。
+     *
+     * 判断依据只用 referrer 是否同源：
+     *   同源 → 回上一页；
+     *   不同源（从搜索引擎等外部进来）或为空 → 走 href 兜底。
+     * 不拿 history.length 当依据 —— 它算的是整个标签页的历史，用户可能
+     * 是从别的网站跳过来的，那样「返回」会把人送出站外。 */
+    var origin = location.protocol + '//' + location.host;
+    CLJ.qsa('[data-clj-back]').forEach(function (n) {
+      n.addEventListener('click', function (e) {
+        var ref = '';
+        try { ref = document.referrer || ''; } catch (err) { ref = ''; }
+        if (ref && ref.indexOf(origin) === 0 && window.history && window.history.length > 1) {
+          e.preventDefault();
+          window.history.back();
+        }
+      });
+    });
+
     // 预览环境下 localStorage 可能不可用，提前探一次，给出温和提示
     var probe = CFG.STORAGE_PREFIX + '__probe';
     try {

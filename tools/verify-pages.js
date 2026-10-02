@@ -236,6 +236,32 @@ function enclosingTag(body, pos) {
 });
 
 /* ------------------------------------------------------------
+ * [6] 「返回」按钮约定
+ * ------------------------------------------------------------
+ * 带 quiz-top__back 的按钮必须是 data-clj-back —— 交给 js/global.js 处理成
+ * 「回上一页，回不去才用 href 兜底」。
+ * 漏了这个标记，它就退化成「跳固定地址」：从 首页 → 模块页 → 开始页 进来的人
+ * 会被一个写死的「返回首页」直接跳过模块页。 */
+console.log('\n[6] 「返回」按钮约定');
+let backFail = 0;
+htmlFiles.forEach(page => {
+  const html = read(page);
+  const backTags = html.match(/<a[^>]*quiz-top__back[^>]*>/g) || [];
+  backTags.forEach(tag => {
+    if (tag.indexOf('data-clj-back') < 0) {
+      fail++; backFail++;
+      console.log('  ✗ ' + page + ' 的返回按钮缺 data-clj-back（会退化成跳固定地址）：' + tag.slice(0, 70));
+    }
+  });
+  /* 标签不要写死「返回首页」之类 —— 它现在回的是来路，不是首页 */
+  if (/quiz-top__back[^>]*>[\s\S]{0,40}?返回首页/.test(html)) {
+    fail++; backFail++;
+    console.log('  ✗ ' + page + ' 的返回按钮写着「返回首页」，但它回的是来路，标签对不上');
+  }
+});
+if (!backFail) console.log('  ✓ 返回按钮都带 data-clj-back，标签与行为一致');
+
+/* ------------------------------------------------------------
  * 汇总
  * ---------------------------------------------------------- */
 console.log('\n' + '='.repeat(48));
