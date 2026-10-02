@@ -70,6 +70,64 @@
 
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
+  /** 32 位乘法。Math.imul 是 ES6，老 WebView 没有，用移位乘法兜底 */
+  var mul32 = Math.imul || function (a, b) {
+    var ah = (a >>> 16) & 0xffff, al = a & 0xffff;
+    var bh = (b >>> 16) & 0xffff, bl = b & 0xffff;
+    return ((al * bl) + (((ah * bl + al * bh) << 16) >>> 0)) >>> 0;
+  };
+
+  /**
+   * 32 位整数混淆（splitmix32 的收尾三轮）。
+   *
+   * 别用「字符串哈希 + 比大小」来定并列次序 —— 踩过：
+   * `hashStr(种子 + ':' + 维度名)` 的输入共享长前缀、只差三个字符，
+   * FNV 的雪崩在这里不充分，实测两两并列时最偏的一对能到 60:40，
+   * 画像分布仍然不均（语言 14.1% vs 空间 11.5%）。换成正经的
+   * 整型混淆后，两两并列稳定在 50% 附近。
+   */
+  function mix32(x) {
+    x = x >>> 0;
+    x = (x ^ (x >>> 16)) >>> 0;
+    x = mul32(x, 0x7feb352d);
+    x = (x ^ (x >>> 15)) >>> 0;
+    x = mul32(x, 0x846ca68b);
+    x = (x ^ (x >>> 16)) >>> 0;
+    return x >>> 0;
+  }
+
+  /** 简版 FNV-1a，用来把「一份作答」压成一个稳定整数 */
+  function hashStr(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
+    return h >>> 0;
+  }
+
+  /** 一份作答的种子：只看答案值，和题目顺序无关 */
+  function seedOf(answers) {
+    if (!answers) return 0;
+    var keys = Object.keys(answers).sort();
+    var s = '';
+    for (var i = 0; i < keys.length; i++) s += answers[keys[i]];
+    return hashStr(s);
+  }
+
+  /**
+   * 同分时用的稳定次序。
+   *
+   * **不能按维度定义顺序排。** 曾经就是那样，结果随机作答下
+   * 语言 16.9%、自然 8.7%，差近两倍 —— 仅仅因为 LIN 写在数组第一位。
+   * 更糟的是实测有 19.2% 的作答在最高分处并列，也就是每五个人里
+   * 就有一个，「拿到哪张画像」完全由我列维度的顺序决定。
+   *
+   * 改成用「这份作答自己的哈希」当种子：同一个人结果稳定（可复现，
+   * 刷新重算都一样），不同人之间则是均匀的。
+   */
+  function tieRank(seed, key) {
+    var i = DIM_KEYS.indexOf(key);
+    return mix32((seed ^ mul32(i + 1, 0x9E3779B1)) >>> 0);
+  }
+
   /** 把 5 个 1~5 的自评换算成 0~100 */
   function toPct(sum, count) {
     if (!count) return 0;
@@ -111,10 +169,12 @@
     var avg = values.reduce(function (a, b) { return a + b; }, 0) / DIM_KEYS.length;
     var variance = values.reduce(function (a, v) { return a + (v - avg) * (v - avg); }, 0) / DIM_KEYS.length;
 
-    /* 排序：分值降序；分值相同按 DIM_KEYS 的定义顺序，保证结果可复现 */
+    /* 排序：分值降序；同分时用「这份作答的哈希」定次序，不按维度定义顺序。
+     * 理由见上面 tieRank 的注释 —— 按定义顺序会让排在前面的维度凭空多出概率。 */
+    var seed = seedOf(answers);
     var order = DIM_KEYS.slice().sort(function (a, b) {
       if (pct[b] !== pct[a]) return pct[b] - pct[a];
-      return DIM_KEYS.indexOf(a) - DIM_KEYS.indexOf(b);
+      return tieRank(seed, a) - tieRank(seed, b);
     });
 
     return { sum: sum, count: count, pct: pct, order: order, avg: avg, variance: variance };

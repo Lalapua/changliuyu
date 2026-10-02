@@ -107,7 +107,54 @@ K.forEach(k => {
   if (top !== k) bad('拉高「' + S.dim(k).name + '」后 Top1 却是 ' + S.dim(top).name);
 });
 ok('八维逐个拉高时 Top1 都正确');
-ok('排序可复现（同分按下标）', S.topDims(S.computeScores(qs, aAll(3)), 3).join('-') === 'LIN-LOG-SPA');
+{
+  /* 同分时的次序必须可复现（同一份作答算两次结果一致），
+   * 但**不能**按维度定义顺序 —— 那会让排在前面的维度凭空多出概率。
+   * 这里只断言可复现；均匀性由下面单独一条盯着。 */
+  const o1 = S.topDims(S.computeScores(qs, aAll(3)), 3).join('-');
+  const o2 = S.topDims(S.computeScores(qs, aAll(3)), 3).join('-');
+  ok('同分时的次序可复现', o1 === o2, o1);
+  const mixed = aBy({ LIN: 5, LOG: 5, PER: 5, NAT: 5, MUS: 2 });
+  const m1 = S.topDims(S.computeScores(qs, mixed), 3).join('-');
+  const m2 = S.topDims(S.computeScores(qs, mixed), 3).join('-');
+  ok('多项并列时同样可复现', m1 === m2, m1);
+}
+{
+  /* 核心性质：**随机作答下八张画像的出现概率应当接近均匀**。
+   * 曾经同分按维度定义顺序排，实测 LIN 15.5% 单调降到 NAT 9.9%（1.56 倍）
+   * —— 越靠前的维度概率越高，纯粹因为它在数组里排得前面。
+   *
+   * 注意这里必须用**雪崩良好的 PRNG**：先用 LCG
+   * `(seed*1103515245+12345) & 0x7fffffff` 跑，8 步一取会短程相关，
+   * 结果测出"奇偶下标交替偏高"的假偏置（1.23 倍），追了一轮才发现
+   * 是随机数发生器的问题，不是算法的问题。 */
+  const mulberry32 = a => () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), 1 | t);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const rnd3 = mulberry32(20261002);
+  const N = 60000;
+  let valid = 0, flatN = 0;
+  const cnt = {}; K.forEach(k => { cnt[k] = 0; });
+  for (let i = 0; i < N; i++) {
+    const a = {};
+    qs.forEach(q => { a[q.id] = 1 + Math.floor(rnd3() * 5); });
+    const sc = S.computeScores(qs, a);
+    if (S.isFlat(sc)) { flatN++; continue; }
+    cnt[S.topDims(sc, 1)[0]]++;
+    valid++;
+  }
+  const vals = K.map(k => cnt[k]);
+  const mx = Math.max.apply(null, vals), mn = Math.min.apply(null, vals);
+  const ratio = mx / mn;
+  ok('随机作答的画像分布（最热/最冷）', ratio.toFixed(3) + ' 倍　' +
+    K.map(k => S.dim(k).name + (cnt[k] / valid * 100).toFixed(1) + '%').join(' '));
+  if (ratio < 1.15) ok('八张画像分布接近均匀，没有因数组顺序而偏袒');
+  else bad('分布不均匀：最热的比最冷的多 ' + ratio.toFixed(3) + ' 倍，同分次序可能又被定义顺序影响了');
+}
 {
   const flatSc = S.computeScores(qs, aAll(3));
   const shaped = S.computeScores(qs, aBy({ LOG: 5, SPA: 5, INT: 5, MUS: 1 }));
