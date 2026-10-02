@@ -67,20 +67,23 @@ npx serve .
 ├── css/
 │   ├── global.css                 设计变量 + 通用组件（换肤只改这里）
 │   ├── site.css                   首页 + 模块列表页样式（主视觉、模块卡、条目卡）
-│   └── career.css                 职业测试专属样式（开始页、答题页、结果页、海报）
+│   └── quiz.css                   测试通用样式（开始页 / 答题页 / 结果页 / 保存遮罩）
+│                                  两个测试共用，**不用为第二个测试复制一份**
 ├── js/
 │   ├── config.js                  ★ 全站配置：品牌、路径、模块清单（唯一事实源）
-│   ├── global.js                  公共工具：存储、IP 图、Toast、懒加载
+│   ├── global.js                  公共工具：存储、IP 图、Toast
 │   ├── home.js                    首页逻辑：渲染模块卡片
 │   ├── module.js                  模块列表页逻辑：渲染模块下的条目卡片
 │   ├── qr.js                      零依赖二维码编码器（结果图片里那个码）
-│   └── career/
-│       ├── questions-light.js     精简版题库（30 题）
-│       ├── questions-full-part1.js ~ part4.js   全量版题库（120 题，每份 30 题）
-│       ├── careers-part1.js ~ part4.js          职业库（108 个，每份 27 个）
-│       ├── scoring.js             ★ 计分、双轴匹配、点评文案池
-│       ├── data.js                数据访问层 + 数据自检
-│       ├── start.js               开始页逻辑（选版本）
+│   ├── poster.js                  ★ 结果海报渲染器（两个测试共用）
+│   │                              调用方只交一份「内容描述」，画布细节都在这里
+│   ├── career/
+│   │   ├── questions-light.js     精简版题库（30 题）
+│   │   ├── questions-full-part1.js ~ part4.js   全量版题库（120 题，每份 30 题）
+│   │   ├── careers-part1.js ~ part4.js          职业库（108 个，每份 27 个）
+│   │   ├── scoring.js             ★ 计分、双轴匹配、点评文案池
+│   │   ├── data.js                数据访问层 + 数据自检
+│   │   ├── start.js               开始页逻辑（选版本）
 │       ├── test.js                答题页逻辑（进度、上下题、存档）
 │       └── result.js              结果页逻辑（渲染 + 分享图）
 ├── tests/
@@ -107,7 +110,7 @@ npx serve .
     └── ip-jade.png                同款青玉原色版，想换风格时改 config.js 一行
 ```
 
-> `css/site.css` 是从 `css/career.css` 里拆出来的：原来的首页主视觉（`.home-hero`）和当时还叫 `.test-card` 的条目卡，都只被首页用，混在「职业测试专属样式」里名不副实。现在首页只加载 `global.css + site.css`，不再拖着整套测试样式。
+> `css/site.css` 是从 `css/quiz.css` 里拆出来的：原来的首页主视觉（`.home-hero`）和当时还叫 `.test-card` 的条目卡，都只被首页用，混在「职业测试专属样式」里名不副实。现在首页只加载 `global.css + site.css`，不再拖着整套测试样式。
 
 ---
 
@@ -155,10 +158,31 @@ npx serve .
 **第 1 步：复制目录**
 
 ```
-复制 /career/          →  /talent/
-复制 /css/career.css   →  /css/talent.css
-复制 /js/career/       →  /js/talent/
+复制 /career/     →  /talent/        （三个页面壳）
+复制 /js/career/  →  /js/talent/     （题库 / 结果库 / 计分 / 页面逻辑）
 ```
+
+**不用复制 CSS，也不用复制海报渲染器** —— `css/quiz.css`（三件套版式）和
+`js/poster.js`（结果海报，含雷达图与二维码）都是两个测试共用的。
+新测试的结果页只需要写一个 `posterSpec()`，把数据翻译成一份内容描述：
+
+```js
+function posterSpec() {
+  return {
+    subtitle: '测试名 · 版本',
+    head: '大字',                       // 代码 / 组合 / 档位名
+    headLabel: '大字右侧的小标签',
+    lead: { label: '主结果标题', name: '主结果', badge: '95%', desc: '一句话' },
+    radar: { keys: KEYS, pct: 分值表, nameOf: k => 名称(k) },
+    sections: [{ label: '区块名', rows: [{ name: '条目', meta: '灰字', value: '95%' }] }],
+    qr: { url: CLJ_POSTER.qrUrl(), title: '标语', sub: '副标语' },
+    footerLine: '万物皆有回响',
+    disclaimer: CFG.DISCLAIMER
+  };
+}
+```
+
+海报的版式、雷达图轴数、二维码风格全部由 `poster.js` 决定，调用方不碰画布。
 
 **第 2 步：改题库**
 
@@ -190,7 +214,8 @@ window.TALENT_RESULTS = (window.TALENT_RESULTS || []).concat([
 
 **第 4 步：改 HTML 的 script 引用**
 
-把 `talent/*.html` 里的 `../js/career/...` 批量替换成 `../js/talent/...`，`css/career.css` 换成 `css/talent.css`。
+把 `talent/*.html` 里的 `../js/career/...` 批量替换成 `../js/talent/...`。
+`css/quiz.css`、`js/qr.js`、`js/poster.js` 保持不动 —— 它们是共用的。
 
 **第 5 步：在 config 里把条目挂上去**
 
@@ -283,7 +308,7 @@ DISCLAIMER: '仅供娱乐，不构成专业建议。'
 </header>
 ```
 
-样式在 `css/career.css` 的「1. 首页」段：
+样式在 `css/quiz.css` 的「1. 首页」段：
 
 - `.home-hero__wordmark`——细字重（400）+ `letter-spacing: 0.4em` + 冷调渐变文字。`text-indent` 与 `letter-spacing` 取值相同，用来抵消末字后多出的那份字距，否则整行会视觉偏左半个字距。
 - `.home-hero__seal`——10px / 0.4em 字距 / 60% 不透明度，绝对定位在右上角。

@@ -36,8 +36,12 @@ function walk(dir, out) {
   return out;
 }
 const all = walk(ROOT);
-const jsFiles = all.filter(f => f.endsWith('.js') && !f.startsWith('tools/'));
-const htmlFiles = all.filter(f => f.endsWith('.html'));
+/* tools/ 下的东西不参与线上，也不受页面规范约束：
+ * 自检脚本本身是 node 脚本，审阅页（review-*.html）是给内容校对用的
+ * 临时页面，它不加载 config.js、也不需要品牌占位 —— 一并排除。 */
+const isTool = f => f.startsWith('tools/');
+const jsFiles = all.filter(f => f.endsWith('.js') && !isTool(f));
+const htmlFiles = all.filter(f => f.endsWith('.html') && !isTool(f));
 
 /* ------------------------------------------------------------
  * 1. JS 语法
