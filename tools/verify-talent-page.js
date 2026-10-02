@@ -24,10 +24,14 @@ const PORT = process.env.PORT || '5237';
 
 const HOOK = `<script>window.__ERR=[];window.addEventListener('error',function(e){window.__ERR.push(e.message)});
 window.addEventListener('unhandledrejection',function(e){window.__ERR.push('unhandled:'+(e.reason&&(e.reason.message||e.reason)))});
-(function(){var ce=console.error;console.error=function(){window.__ERR.push('console.error: '+Array.prototype.map.call(arguments,function(a){return (a&&a.message)||String(a)}).join(' ').slice(0,200));ce.apply(console,arguments)};})();</script>`;
+(function(){var ce=console.error;console.error=function(){window.__ERR.push('console.error: '+Array.prototype.map.call(arguments,function(a){return (a&&a.message)||String(a)}).join(' ').slice(0,200));ce.apply(console,arguments)};})();
+var otb=HTMLCanvasElement.prototype.toBlob;HTMLCanvasElement.prototype.toBlob=function(cb,t2,q){if(this.width>=800)window.__poster=this;return otb.call(this,cb,t2,q)};</script>`;
 
 const REPORT = `<script>
 window.addEventListener('load', function () {
+  /* 结果页才有的按钮：点一下验证「真的能出图」，而不只是「按钮在」 */
+  var sb = document.getElementById('btn-save-img');
+  if (sb) { try { sb.click(); } catch (e) { window.__ERR.push('点保存图片抛错: ' + e.message); } }
   setTimeout(function () {
     var r = document.createElement('pre'); r.id = '__report';
     r.textContent = JSON.stringify(window.__REPORT || {});
@@ -35,7 +39,7 @@ window.addEventListener('load', function () {
     var e = document.createElement('pre'); e.id = '__errs';
     e.textContent = (window.__ERR || []).join(' || ');
     document.body.appendChild(e);
-  }, 900);
+  }, 3500);
 });
 </script>`;
 
@@ -150,7 +154,7 @@ window.__REPORT = { steps: 0, finalBtn: '', hint: '', total: '' };
   /* ---- 3. 结果页：正常作答 ---- */
   console.log('\n=== 3. 结果页（正常作答）===');
   const RES_TAIL = REPORT.replace('window.__REPORT || {}',
-    '({ label:(document.getElementById("code-label")||{}).textContent, code:(document.getElementById("result-code")||{}).textContent, combo:(document.getElementById("result-title")||{}).textContent, profile:(document.getElementById("result-profile")||{}).textContent, dims:document.querySelectorAll("#dim-bars .dim-row").length, radar:document.querySelectorAll("#radar-holder svg polygon").length, talentName:(document.getElementById("talent-name")||{}).textContent, watch:document.querySelectorAll("#talent-watch li").length, figures:document.querySelectorAll("#figure-main .result-card, #figure-alt .result-card").length, saveBtn:!!document.getElementById("btn-save-img"), others:document.querySelectorAll("#other-tests .mini-test").length, title:document.title })');
+    '({ label:(document.getElementById("code-label")||{}).textContent, code:(document.getElementById("result-code")||{}).textContent, combo:(document.getElementById("result-title")||{}).textContent, profile:(document.getElementById("result-profile")||{}).textContent, dims:document.querySelectorAll("#dim-bars .dim-row").length, radar:document.querySelectorAll("#radar-holder svg polygon").length, talentName:(document.getElementById("talent-name")||{}).textContent, watch:document.querySelectorAll("#talent-watch li").length, figures:document.querySelectorAll("#figure-main .result-card, #figure-alt .result-card").length, saveBtn:!!document.getElementById("btn-save-img"), others:document.querySelectorAll("#other-tests .mini-test").length, title:document.title, poster: window.__poster ? (window.__poster.width + "x" + window.__poster.height) : "none", qrModules: (window.__poster && window.__poster.__qrRect) ? window.__poster.__qrRect.modules : 0 })');
   function resultProbe(seed, out) {
     let s = fs.readFileSync(path.join(ROOT, 'talent/result.html'), 'utf8');
     s = s.replace('</head>', HOOK + '</head>');
@@ -182,6 +186,11 @@ window.__REPORT = { steps: 0, finalBtn: '', hint: '', total: '' };
     ok('保存图片按钮在', r.saveBtn);
     ok('「你可能还想测」不再显示天赋测试自己', r.others >= 1, r.others + ' 个');
     ok('标签页标题', JSON.stringify(r.title));
+    /* 关键：光验「按钮在」不够，还得验点下去真的出图 —— 海报是共用模块画的，
+     * 但内容描述是本测试自己拼的，拼错了一样白屏。 */
+    ok('点「保存图片」真的出图', r.poster !== 'none', r.poster);
+    ok('海报宽度 840', /^840x\d+$/.test(String(r.poster)), r.poster);
+    ok('海报上带二维码', r.qrModules >= 21, r.qrModules + ' 模块');
   } else bad('结果页拿不到报告');
   if (errs(dom)) bad('结果页有 JS 错误', errs(dom).slice(0, 200)); else ok('结果页无 JS 错误');
 
