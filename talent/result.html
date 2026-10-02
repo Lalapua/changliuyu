@@ -78,8 +78,10 @@
           <h2 class="section-head__title">和你最像的名人</h2>
           <span class="section-head__hint">只比思维方式，图个乐</span>
         </div>
-        <div id="figure-main"></div>
-        <div class="stack-2" id="figure-alt"></div>
+        <!-- 所有卡片（含最像的那张）都放进同一个 flex 容器：
+             间距由 flex gap 统一给，不再靠「两个容器之间的空隙」来凑，
+             否则首卡和其他卡的间距会被容器的边距差异带偏。 -->
+        <div class="stack-2" id="figure-list"></div>
       </section>
 
       <!-- 操作 -->

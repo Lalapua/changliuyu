@@ -93,8 +93,7 @@
     els.talentName = CLJ.qs('#talent-name');
     els.talentDesc = CLJ.qs('#talent-desc');
     els.talentWatch = CLJ.qs('#talent-watch');
-    els.figureMain = CLJ.qs('#figure-main');
-    els.figureAlt = CLJ.qs('#figure-alt');
+    els.figureList = CLJ.qs('#figure-list');
     els.others = CLJ.qs('#other-tests');
     els.strengths = CLJ.qs('#strength-tags');
     els.versionTag = CLJ.qs('#version-tag');
@@ -232,18 +231,21 @@
    * ============================================================ */
 
   function renderFigures() {
-    CLJ.clear(els.figureMain);
-    CLJ.clear(els.figureAlt);
+    var box = els.figureList;
+    CLJ.clear(box);
+    if (!box) return;
 
     if (!state.figures.length) {
       /* 八项持平：没有形状可比，如实说不硬套，而不是随便给一个 */
-      els.figureMain.appendChild(CLJ.el('p', {
+      box.appendChild(CLJ.el('p', {
         class: 't-body',
         text: '这一块要等你八项分值得出明显的高低才好说。现在八项比较接近，硬套一位名人反而是编的。'
       }));
       return;
     }
 
+    /* 最像的那位 + 另外两位，全部塞进同一个容器 —— 间距交给 flex gap 统一管，
+     * 不分成两个容器（那样首卡的间距会受容器边距影响，看起来忽大忽小）。 */
     var first = state.figures[0].figure;
     var main = CLJ.el('article', { class: 'result-card result-card--main card card--glow anim-pop' });
     main.appendChild(CLJ.el('div', { class: 'result-card__head' }, [
@@ -255,7 +257,7 @@
         CLJ.el('p', { class: 'result-card__reason', text: first.why })
       ])
     ]));
-    els.figureMain.appendChild(main);
+    box.appendChild(main);
 
     state.figures.slice(1).forEach(function (m, i) {
       var card = CLJ.el('article', { class: 'result-card card anim-up d-' + Math.min(i + 1, 6) });
@@ -264,7 +266,7 @@
       ]));
       card.appendChild(CLJ.el('h3', { class: 'result-card__name', text: m.figure.name }));
       card.appendChild(CLJ.el('p', { class: 'result-card__reason', text: m.figure.why }));
-      els.figureAlt.appendChild(card);
+      box.appendChild(card);
     });
   }
 
