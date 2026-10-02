@@ -172,6 +172,62 @@
     return topDims(scores, 3).map(function (k) { return DIM_INFO[k].name; }).join(' · ');
   }
 
+  /* ------------------------------------------------------------
+   * 「和你最像的名人」匹配
+   * ------------------------------------------------------------
+   * 只比**形状**，不比高低 —— 也就是「哪几项相对突出」。
+   * 和职业测试的形状轴同一套做法：把向量中心化之后算余弦相似度。
+   * 中心化的意义在于，一个人是「样样 70 分但逻辑最突出」还是
+   * 「样样 40 分但逻辑最突出」，形状是同一个，就该匹配到同一个人。
+   *
+   * 八项持平时**不匹配**：没有形状可比，硬套一个名人等于编。
+   * 结果页会如实说「八项接近，就不硬套了」。
+   * ---------------------------------------------------------- */
+  function vectorOf(map, scale) {
+    return DIM_KEYS.map(function (k) { return clamp(Number(map && map[k]) || 0, 0, scale) / scale; });
+  }
+
+  function centered(v) {
+    var m = v.reduce(function (a, b) { return a + b; }, 0) / v.length;
+    return v.map(function (x) { return x - m; });
+  }
+
+  /** 形状相似度，落在 0~1；任一边是零向量（无形状）时返回中性的 0.5 */
+  function shapeSim(a, b) {
+    var dot = 0, na = 0, nb = 0;
+    for (var i = 0; i < a.length; i++) { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+    if (na === 0 || nb === 0) return 0.5;
+    return (dot / (Math.sqrt(na) * Math.sqrt(nb)) + 1) / 2;
+  }
+
+  /**
+   * 按形状相似度匹配名人。返回 [{ figure, sim }]，已按相似度降序。
+   * 八项持平时返回空数组 —— 调用方据此显示「不硬套」的文案。
+   */
+  function matchFigures(scores, figures, n) {
+    if (!figures || !figures.length) return [];
+    if (isFlat(scores)) return [];
+    var U = centered(vectorOf(scores.pct, 100));
+    var ranked = figures.map(function (f) {
+      return { figure: f, sim: shapeSim(U, centered(vectorOf(f.w, 5))) };
+    });
+    ranked.sort(function (a, b) { return b.sim - a.sim; });
+    return ranked.slice(0, Math.max(1, n || 3));
+  }
+
+  /* ------------------------------------------------------------
+   * 结果页的一句话组合解读（纯模板，不写死组合）
+   * ---------------------------------------------------------- */
+  function comboLine(scores) {
+    if (isFlat(scores)) return '';
+    var t = topDims(scores, 3);
+    var weak = bottomDim(scores);
+    return '八项里最稳的是「' + DIM_INFO[t[0]].name + '」，' +
+           '后面跟着「' + DIM_INFO[t[1]].name + '」和「' + DIM_INFO[t[2]].name + '」；' +
+           '相对最不显眼的是「' + DIM_INFO[weak].name + '」——' +
+           '那不是缺点，只是它不太是你习惯用的那把工具。';
+  }
+
   window.CLJ_TALENT_SCORING = {
     DIM_KEYS: DIM_KEYS,
     DIM_INFO: DIM_INFO,
@@ -187,6 +243,9 @@
     isFlat: isFlat,
     levelProfile: levelProfile,
     headLabel: headLabel,
+    shapeSim: shapeSim,
+    matchFigures: matchFigures,
+    comboLine: comboLine,
     /** 维度信息，取不到时给个兜底，调用方不用判空 */
     dim: function (k) { return DIM_INFO[k] || { name: k, full: k, en: k, short: '', desc: '' }; }
   };

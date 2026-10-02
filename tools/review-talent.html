@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天赋测试 · 内容审阅｜长留玉</title>
+<style>
+  :root{
+    --bg:#0B0B0F; --card:#15131D; --card2:#1C1A26; --line:rgba(255,255,255,.08);
+    --text:#F5F5F7; --text2:#A1A1AA; --text3:#6E6E78;
+    --accent:#A78BFA; --accent2:#6C5CE7; --cyan:#22D3EE; --green:#34D399; --amber:#FBBF24;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:15px/1.7 "PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif}
+  .wrap{max-width:940px;margin:0 auto;padding:36px 24px 80px}
+  h1{font-size:26px;margin:0 0 6px}
+  .sub{color:var(--text3);font-size:14px;margin-bottom:28px}
+  h2{font-size:18px;margin:44px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line);
+     display:flex;align-items:baseline;gap:10px}
+  h2 .n{color:var(--accent);font-size:13px;font-weight:600;letter-spacing:.08em}
+  .note{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+        color:var(--text2);font-size:13.5px;margin-bottom:18px}
+  .note b{color:var(--text)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--text3);font-weight:500;font-size:12px;letter-spacing:.06em}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;
+       background:var(--card2);padding:1px 6px;border-radius:5px;color:var(--accent)}
+  .tabs{display:flex;gap:8px;margin-bottom:14px}
+  .tab{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:7px 16px;
+       font-size:13.5px;color:var(--text2);cursor:pointer}
+  .tab.on{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border-color:transparent}
+  .dim{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px}
+  .dim__head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+  .dim__name{font-size:16px;font-weight:700}
+  .dim__full{color:var(--text3);font-size:12.5px}
+  .dim__short{color:var(--text2);font-size:13px;margin-bottom:12px}
+  .q{display:flex;gap:10px;padding:5px 0;font-size:14px}
+  .q__id{color:var(--text3);font-family:ui-monospace,monospace;font-size:12px;flex:0 0 34px;padding-top:2px}
+  .q.extra{opacity:.92}
+  .q.extra .q__id{color:var(--cyan)}
+  .prof{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px}
+  .prof__top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .prof__name{font-size:20px;font-weight:800}
+  .prof__tag{color:var(--accent);font-size:13.5px}
+  .prof__desc{color:var(--text);font-size:14px;margin:0 0 12px}
+  .watch{border-left:3px solid var(--amber);padding:7px 0 7px 12px;color:var(--text2);font-size:13.5px}
+  .watch b{color:var(--amber);font-weight:600}
+  .figs{display:grid;grid-template-columns:repeat(auto-fill,minmax(212px,1fr));gap:10px}
+  .fig{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .fig__n{font-weight:700;font-size:14.5px;margin-bottom:4px}
+  .fig__w{color:var(--text3);font-size:11.5px;font-family:ui-monospace,monospace;margin-bottom:6px;word-break:break-all}
+  .fig__y{color:var(--text2);font-size:13px}
+  .try{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px}
+  .try__row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  select{background:var(--card2);color:var(--text);border:1px solid var(--line);
+    border-radius:8px;padding:7px 10px;font-size:13.5px}
+  button.btn{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:0;
+    border-radius:999px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer}
+  .big{font-size:30px;font-weight:800;color:var(--accent);letter-spacing:.02em}
+  .bars{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .bar{display:grid;grid-template-columns:52px 1fr 44px;align-items:center;gap:10px;font-size:13px}
+  .bar__t{height:8px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
+  .bar__f{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent2),var(--accent) 58%,var(--cyan))}
+  .bar__v{text-align:right;color:var(--text2);font-family:ui-monospace,monospace;font-size:12.5px}
+  .meta{color:var(--text3);font-size:13px;margin-top:10px}
+  .figres{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+  .figres__main{font-size:21px;font-weight:800;color:var(--cyan)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>天赋测试 · 内容审阅</h1>
+  <div class="sub">加德纳多元智能 · 八维 · 轻量版 40 题 / 全量版 80 题 · 八张画像 · 32 位名人　（审阅用，不参与线上）</div>
+
+  <h2><span class="n">1</span>八个维度</h2>
+  <div id="dims"></div>
+
+  <h2><span class="n">2</span>题库</h2>
+  <div class="note">
+    按 <b>维度</b> 分组显示，方便看每一项问得全不全。实际答题时是<b>轮转交错</b>排列的。<br>
+    轻量版 40 题（每维 5 题）＝ <span style="color:#A1A1AA">黑字</span>；
+    全量版 80 题 = 轻量版全部 + 补充 40 题（每维再加 5 题）＝
+    <span style="color:#22D3EE">青色 id</span> 那些。全量版是<b>超集</b>，两版核心题一致，分数才可比。
+  </div>
+  <div class="tabs">
+    <div class="tab on" data-v="light">轻量版 40 题</div>
+    <div class="tab" data-v="full">全量版 80 题</div>
+  </div>
+  <div id="questions"></div>
+
+  <h2><span class="n">3</span>八张天赋画像</h2>
+  <div class="note">名字用「形容词 + 名词」。<b>要留意</b>那几句按非暴力沟通的路子写：先说现象，再说影响，最后给一个自己能问自己的问题——不下判断、不用「你应该」。</div>
+  <div id="profiles"></div>
+
+  <h2><span class="n">4</span>「和你最像的名人」库</h2>
+  <div class="note">
+    每个名人给一组八维权重，匹配时<b>只比形状不比高低</b>——同一种「哪几项相对突出」，样样 50 分和样样 90 分的人是同一位名人。<br>
+    选人避开政治人物；措辞是「思维方式有点像」，不是「你就是他」。
+  </div>
+  <div id="figures"></div>
+
+  <h2><span class="n">5</span>试算一下</h2>
+  <div class="try">
+    <div class="try__row">
+      <span>作答方式</span>
+      <select id="mode">
+        <option value="nvc" selected>「语言+人际」高，其他给 3</option>
+        <option value="log">只有「逻辑」高，其他给 2</option>
+        <option value="nat">只有「自然」高，其他给 3</option>
+        <option value="5">全选 5（这简直就是我）</option>
+        <option value="4">全选 4（比较这样）</option>
+        <option value="3">全选 3（一般）</option>
+        <option value="2">全选 2（不太这样）</option>
+        <option value="1">全选 1（完全不这样）</option>
+        <option value="noise">随机作答（每次不同）</option>
+      </select>
+      <select id="ver"><option value="light">轻量版 40 题</option><option value="full">全量版 80 题</option></select>
+      <button class="btn" id="run">试算</button>
+    </div>
+    <div id="result"></div>
+  </div>
+</div>
+
+<script src="../js/talent/scoring.js"></script>
+<script src="../js/talent/questions-light.js"></script>
+<script src="../js/talent/questions-full.js"></script>
+<script src="../js/talent/talents.js"></script>
+<script src="../js/talent/figures.js"></script>
+<script src="../js/talent/data.js"></script>
+<script>
+(function () {
+  var S = window.CLJ_TALENT_SCORING;
+  var D = window.CLJ_TALENT_DATA;
+  var K = S.DIM_KEYS;
+  var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+
+  /* ---- 1. 维度表 ---- */
+  document.getElementById('dims').innerHTML =
+    '<table><tr><th>代码</th><th>维度</th><th>全称</th><th>这个维度在问什么</th></tr>' +
+    K.map(function (k) {
+      var d = S.dim(k);
+      return '<tr><td><code>' + k + '</code></td><td><b>' + d.name + '</b></td>' +
+             '<td>' + d.full + '<br><span style="color:#6E6E78;font-size:12px">' + d.en + '</span></td>' +
+             '<td>' + d.short + '<br><span style="color:#6E6E78;font-size:12.5px">' + d.desc + '</span></td></tr>';
+    }).join('') + '</table>';
+
+  /* ---- 2. 题库（可切版本）---- */
+  var lightIds = {};
+  D.questions('light').forEach(function (q) { lightIds[q.id] = true; });
+  function renderQuestions(v) {
+    var qs = D.questions(v);
+    document.getElementById('questions').innerHTML = K.map(function (k) {
+      var list = qs.filter(function (q) { return Object.keys(q.dims)[0] === k; });
+      var d = S.dim(k);
+      return '<div class="dim">' +
+        '<div class="dim__head"><span class="dim__name">' + d.name + '</span>' +
+        '<code>' + k + '</code><span class="dim__full">' + list.length + ' 题</span></div>' +
+        '<div class="dim__short">' + d.short + '</div>' +
+        list.map(function (q) {
+          var extra = !lightIds[q.id];
+          return '<div class="q' + (extra ? ' extra' : '') + '"><span class="q__id">' + q.id +
+                 '</span><span>' + esc(q.text) + '</span></div>';
+        }).join('') +
+      '</div>';
+    }).join('');
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) {
+    t.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (x) { x.classList.remove('on'); });
+      t.classList.add('on');
+      renderQuestions(t.dataset.v);
+    });
+  });
+  renderQuestions('light');
+
+  /* ---- 3. 画像 ---- */
+  document.getElementById('profiles').innerHTML = D.talents().map(function (t) {
+    return '<div class="prof">' +
+      '<div class="prof__top"><span class="prof__name">' + t.name + '</span>' +
+      '<code>' + t.id + '</code><span class="prof__tag">' + t.tagline + '</span></div>' +
+      '<p class="prof__desc">' + esc(t.desc) + '</p>' +
+      '<div class="watch"><b>要留意</b>　' + esc(t.watch) + '</div>' +
+    '</div>';
+  }).join('');
+
+  /* ---- 4. 名人的库 ---- */
+  document.getElementById('figures').innerHTML = K.map(function (k) {
+    var list = D.figures().filter(function (f) {
+      var max = -1, main = null;
+      K.forEach(function (x) { if (f.w[x] > max) { max = f.w[x]; main = x; } });
+      return main === k;
+    });
+    if (!list.length) return '';
+    return '<div style="margin-bottom:20px">' +
+      '<div style="color:#A78BFA;font-size:14px;font-weight:600;margin-bottom:8px">' +
+      S.dim(k).name + '见长 · ' + list.length + ' 位</div>' +
+      '<div class="figs">' + list.map(function (f) {
+        return '<div class="fig"><div class="fig__n">' + f.name + '</div>' +
+               '<div class="fig__w">' + K.map(function (x) { return x + f.w[x]; }).join(' ') + '</div>' +
+               '<div class="fig__y">' + esc(f.why) + '</div></div>';
+      }).join('') + '</div></div>';
+  }).join('');
+
+  /* ---- 5. 试算 ---- */
+  function answersFor(mode, qs) {
+    var a = {}, seed = 123456789;
+    qs.forEach(function (q) {
+      var dim = Object.keys(q.dims)[0];
+      if (mode === 'log') a[q.id] = (dim === 'LOG') ? 5 : 2;
+      else if (mode === 'nvc') a[q.id] = (dim === 'LIN' || dim === 'PER') ? 5 : 3;
+      else if (mode === 'nat') a[q.id] = (dim === 'NAT') ? 5 : 3;
+      else if (mode === 'noise') {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        a[q.id] = 1 + Math.floor(seed / 0x7fffffff * 5);
+      } else a[q.id] = Number(mode);
+    });
+    return a;
+  }
+
+  function run() {
+    var mode = document.getElementById('mode').value;
+    var ver = document.getElementById('ver').value;
+    var qs = D.questions(ver);
+    var sc = S.computeScores(qs, answersFor(mode, qs));
+    var flat = S.isFlat(sc);
+    var top3 = S.topDims(sc, 3);
+    var prof = D.talentById(top3[0]);
+    var lvl = S.levelProfile(sc);
+    var figs = S.matchFigures(sc, D.figures(), 3);
+
+    var h = '<div class="big">' + (flat ? lvl.code : prof.name) + '</div>';
+    h += '<div class="meta">' + (flat
+      ? '八项持平 → 不编造「长板」，改谈整体水平（平均 ' + lvl.avg + ' 分）'
+      : S.dim(top3[0]).name + ' 最突出 → 主画像就是上面这位') + '</div>';
+    h += '<div class="meta">'
+      + (flat ? '' : '天赋组合：' + top3.map(function (k) { return S.dim(k).name; }).join(' · ') + '　')
+      + '平均 ' + Math.round(sc.avg) + '　标准差 ' + Math.sqrt(sc.variance).toFixed(1)
+      + '（≥ ' + S.FLAT_STD + ' 才算有形状）</div>';
+
+    h += '<div class="bars">' + sc.order.map(function (k) {
+      return '<div class="bar"><span style="color:#A1A1AA">' + S.dim(k).name + '</span>' +
+             '<span class="bar__t"><span class="bar__f" style="width:' + sc.pct[k] + '%"></span></span>' +
+             '<span class="bar__v">' + sc.pct[k] + '</span></div>';
+    }).join('') + '</div>';
+
+    if (flat) {
+      h += '<div class="meta" style="margin-top:16px">' + esc(lvl.desc) + '</div>';
+      h += '<div class="meta">相对最突出：' + S.dim(sc.order[0]).name +
+           '（' + sc.pct[sc.order[0]] + '）／相对最不显眼：' + S.dim(sc.order[7]).name +
+           '（' + sc.pct[sc.order[7]] + '）</div>';
+    } else {
+      h += '<div class="meta" style="margin-top:16px">' + esc(S.comboLine(sc)) + '</div>';
+      h += '<div class="meta">' + esc(prof.desc) + '</div>';
+      h += '<div class="watch" style="margin-top:12px"><b>要留意</b>　' + esc(prof.watch) + '</div>';
+    }
+
+    h += '<div class="figres">' + (figs.length
+      ? '<div style="color:#6E6E78;font-size:12.5px;margin-bottom:4px">和你最像的名人是</div>' +
+        '<div class="figres__main">' + figs[0].figure.name + '</div>' +
+        '<div class="meta">' + esc(figs[0].figure.why) + '</div>' +
+        '<div class="meta">也有一点像：' + figs.slice(1).map(function (x) { return x.figure.name; }).join('、') + '</div>'
+      : '<div style="color:#6E6E78;font-size:13px">八项比较接近，没有明显的形状可比 —— 就不硬套一位名人了。</div>')
+      + '</div>';
+
+    document.getElementById('result').innerHTML = h;
+  }
+  document.getElementById('run').addEventListener('click', run);
+  document.getElementById('ver').addEventListener('change', run);
+  run();
+
+  var rep = D.validate();
+  console.log('[天赋测试内容自检]', rep.ok ? '通过' : rep.errors, rep.stats, rep.warnings);
+})();
+</script>
+</body>
+</html>

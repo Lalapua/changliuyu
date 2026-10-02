@@ -1,12 +1,13 @@
 /* ============================================================
  * 长留玉 · 天赋测试 · 自检
  * ------------------------------------------------------------
- * 检查三件事：
- *   A. 数据格式：40 题、八维各 5 题、八张画像一一对应、题干长度合理；
- *   B. 计分逻辑：极端作答要落在预期档位，排序要可复现；
- *   C. 「八项持平」阈值不能设松 —— 这是职业测试踩过的坑，
- *      当初阈值设成「标准差 < 10 分」，28.7% 的正常作答被误判成没有形状。
- *      这里用同一套量级（3.5 分）并守住误判率。
+ * 检查四件事：
+ *   A. 数据格式：轻量版 40 题 / 全量版 80 题（每维 5 / 10 题）、
+ *      八张画像一一对应且 name 是「形容词+名词」、名人的库权重合法；
+ *   B. 计分逻辑：极端作答落在预期档位，排序可复现；
+ *   C. 「八项持平」阈值不能设松 —— 职业测试踩过坑（阈值相当于标准差 10 分，
+ *      28.7% 的正常作答被误判成没有形状）。这里同一套量级并守住误判率；
+ *   D. 名人匹配只比**形状**不比高低 —— 同一形状不同水平必须匹配到同一位。
  *
  * 运行：node tools/verify-talent.js
  * ============================================================ */
@@ -18,12 +19,13 @@ const ROOT = path.resolve(__dirname, '..');
 const ctx = { window: {}, console };
 vm.createContext(ctx);
 
-['scoring.js', 'questions.js', 'talents.js', 'data.js'].forEach(f => {
+['scoring.js', 'questions-light.js', 'questions-full.js', 'talents.js', 'figures.js', 'data.js'].forEach(f => {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'talent', f), 'utf8'), ctx, { filename: 'js/talent/' + f });
 });
 
 const S = ctx.window.CLJ_TALENT_SCORING;
 const D = ctx.window.CLJ_TALENT_DATA;
+const K = S.DIM_KEYS;
 
 let pass = 0, fail = 0;
 const ok = (l, x) => { console.log('  ✓ ' + l + (x ? ' → ' + x : '')); pass++; };
@@ -36,118 +38,162 @@ if (rep.ok) ok('validate() 通过，无错误');
 else { bad('validate() 报错 ' + rep.errors.length + ' 条'); rep.errors.slice(0, 8).forEach(e => console.log('      · ' + e)); }
 rep.warnings.slice(0, 6).forEach(w => console.log('      ! ' + w));
 
-const qs = D.questions();
-ok('题库总数', qs.length + ' 题');
-const perDim = {};
-S.DIM_KEYS.forEach(k => { perDim[k] = 0; });
-qs.forEach(q => Object.keys(q.dims).forEach(k => { perDim[k]++; }));
-ok('八维题量', S.DIM_KEYS.map(k => S.dim(k).name + perDim[k]).join(' / '));
-const uniq = new Set(qs.map(q => q.id));
-ok('题目 id 无重复', uniq.size + ' 个唯一 id');
+['light', 'full'].forEach(v => {
+  const list = D.questions(v);
+  const meta = D.VERSIONS[v];
+  const per = {};
+  K.forEach(k => { per[k] = 0; });
+  list.forEach(q => Object.keys(q.dims).forEach(k => { per[k]++; }));
+  const uniq = new Set(list.map(q => q.id)).size;
+  const expectPer = v === 'light' ? 5 : 10;
+  const allRight = K.every(k => per[k] === expectPer);
+  if (list.length === meta.count && uniq === list.length && allRight) {
+    ok(meta.label + ' ' + list.length + ' 题，每维 ' + expectPer + ' 题，id 无重复');
+  } else {
+    bad(meta.label + ' 题量/分布不对', '共 ' + list.length + '（声明 ' + meta.count + '），每维 ' +
+      K.map(k => S.dim(k).name + per[k]).join('/') + '，唯一 id ' + uniq);
+  }
+});
+
+/* 全量版是轻量版的超集 */
+{
+  const l = new Set(D.questions('light').map(q => q.id));
+  const f = D.questions('full');
+  const overlap = f.filter(q => l.has(q.id)).length;
+  if (overlap === l.size) ok('全量版是轻量版的超集', overlap + ' 道重叠 + ' + (f.length - overlap) + ' 道补充');
+  else bad('全量版没有包含轻量版的全部题目', overlap + '/' + l.size);
+}
 
 const ts = D.talents();
-ok('画像数量与维度一一对应', ts.length + ' 张 / ' + S.DIM_KEYS.length + ' 维');
-S.DIM_KEYS.forEach(k => {
-  const t = D.talentById(k);
-  if (!t) bad('维度 ' + k + ' 缺画像');
-});
-if (S.DIM_KEYS.every(k => D.talentById(k))) ok('每个维度都能取到画像');
+if (ts.length === K.length && K.every(k => D.talentById(k))) ok('八张画像与八维一一对应');
+else bad('画像与维度对不上', ts.length + ' 张');
+const shortNames = ts.filter(t => t.name.length < 5);
+if (!shortNames.length) ok('画像名都是「形容词 + 名词」结构', ts.map(t => t.name).join(' / '));
+else bad('有画像名字太短', shortNames.map(t => t.name).join(' / '));
 
-/* 题干长度分布 */
-const lens = qs.map(q => q.text.length);
-ok('题干长度', '最短 ' + Math.min.apply(null, lens) + ' 字 / 最长 ' + Math.max.apply(null, lens) + ' 字');
+const figs = D.figures();
+ok('名人的库', figs.length + ' 位');
+{
+  const byPrimary = {};
+  K.forEach(k => { byPrimary[k] = 0; });
+  figs.forEach(f => {
+    let max = -1, main = null;
+    K.forEach(k => { if (f.w[k] > max) { max = f.w[k]; main = k; } });
+    if (main) byPrimary[main]++;
+  });
+  const thin = K.filter(k => byPrimary[k] < 3);
+  if (!thin.length) ok('每项能力都有 ≥3 位名人可选', K.map(k => S.dim(k).name + byPrimary[k]).join('/'));
+  else bad('这些能力的名人太少', thin.map(k => S.dim(k).name + byPrimary[k]).join('/'));
+}
 
 /* ============ B. 计分逻辑 ============ */
 console.log('\n===== B. 计分逻辑 =====');
+const qs = D.questions('light');
+const aAll = v => { const a = {}; qs.forEach(q => { a[q.id] = v; }); return a; };
+const aBy = m => { const a = {}; qs.forEach(q => { a[q.id] = m[Object.keys(q.dims)[0]] || 3; }); return a; };
 
-function answersAll(v) {
-  const a = {};
-  qs.forEach(q => { a[q.id] = v; });
-  return a;
-}
-function answersBy(levelMap) {
-  const a = {};
-  qs.forEach(q => {
-    const dim = Object.keys(q.dims)[0];
-    a[q.id] = levelMap[dim] || 3;
-  });
-  return a;
-}
-
-/* 全选同一档 → 八项持平，走「整体水平」档 */
-console.log('  极端作答（全选同一档）：');
 [[1, '尚未显影'], [2, '偏内敛'], [3, '不偏不倚'], [4, '整体偏强'], [5, '全面突出']].forEach(([v, expect]) => {
-  const sc = S.computeScores(qs, answersAll(v));
-  const flat = S.isFlat(sc);
-  const code = S.levelProfile(sc).code;
-  const allSame = S.DIM_KEYS.every(k => sc.pct[k] === sc.pct[S.DIM_KEYS[0]]);
-  if (!flat) bad('全选 ' + v + ' 应判为八项持平，却没有');
-  else if (code !== expect) bad('全选 ' + v + ' 档位应为「' + expect + '」，实际「' + code + '」');
-  else if (!allSame) bad('全选 ' + v + ' 八项分值应完全相同');
-  else ok('全选 ' + v + ' → 持平，整体水平「' + code + '」', '分值 ' + sc.pct[S.DIM_KEYS[0]]);
+  const sc = S.computeScores(qs, aAll(v));
+  const same = K.every(k => sc.pct[k] === sc.pct[K[0]]);
+  if (S.isFlat(sc) && S.levelProfile(sc).code === expect && same) {
+    ok('全选 ' + v + ' → 持平 / ' + expect, '分值 ' + sc.pct[K[0]]);
+  } else {
+    bad('全选 ' + v + ' 应持平坦落「' + expect + '」', 'flat=' + S.isFlat(sc) + ' code=' + S.levelProfile(sc).code);
+  }
 });
 
-/* 单项突出 → 排序正确 */
-console.log('  单项突出：');
-S.DIM_KEYS.forEach(k => {
-  const sc = S.computeScores(qs, answersBy({ [k]: 5 }));
-  const top = S.topDims(sc, 3);
-  if (top[0] !== k) bad('把「' + S.dim(k).name + '」答成最高，Top1 却是 ' + S.dim(top[0]).name);
+K.forEach(k => {
+  const top = S.topDims(S.computeScores(qs, aBy({ [k]: 5 })), 1)[0];
+  if (top !== k) bad('拉高「' + S.dim(k).name + '」后 Top1 却是 ' + S.dim(top).name);
 });
-ok('八维逐个拉高时，Top1 都是对应维度');
-ok('排序可复现（同分按下标顺序）', S.topDims(S.computeScores(qs, answersAll(3)), 3).join('-') === 'LIN-LOG-SPA');
-
-/* 大字标签 */
-console.log('  结果页大字：');
+ok('八维逐个拉高时 Top1 都正确');
+ok('排序可复现（同分按下标）', S.topDims(S.computeScores(qs, aAll(3)), 3).join('-') === 'LIN-LOG-SPA');
 {
-  const flatSc = S.computeScores(qs, answersAll(3));
-  ok('持平时显示整体水平', '「' + S.headLabel(flatSc) + '」');
-  const lopsided = S.computeScores(qs, answersBy({ LOG: 5, SPA: 5, INT: 5, MUS: 1 }));
-  const h = S.headLabel(lopsided);
-  if (h.indexOf('·') > 0) ok('有形状时显示天赋组合', '「' + h + '」');
-  else bad('天赋组合格式不对：' + h);
+  const flatSc = S.computeScores(qs, aAll(3));
+  const shaped = S.computeScores(qs, aBy({ LOG: 5, SPA: 5, INT: 5, MUS: 1 }));
+  ok('持平时大字显示整体水平', '「' + S.headLabel(flatSc) + '」');
+  ok('有形状时大字显示天赋组合', '「' + S.headLabel(shaped) + '」');
+  if (S.bottomDim(S.computeScores(qs, aBy({ LIN: 5, NAT: 1 }))) === 'NAT') ok('相对最弱那项判定正确', '自然');
+  else bad('最弱项判定错误');
 }
 
-/* 弱项提示 */
-{
-  const sc = S.computeScores(qs, answersBy({ LIN: 5, LOG: 4, SPA: 4, NAT: 1 }));
-  const weak = S.bottomDim(sc);
-  if (weak === 'NAT') ok('相对最弱的那项判定正确', S.dim(weak).name);
-  else bad('最弱项应为 NAT，实际 ' + weak);
-}
-
-/* ============ C. 持平阈值不能设松 ============ */
+/* ============ C. 持平阈值 ============ */
 console.log('\n===== C. 持平阈值的误判率 =====');
-console.log('  当前阈值：标准差 < ' + S.FLAT_STD + ' 分（八维分值彼此差不了几分才算持平）');
-let N = 4000, flat = 0, spreadSum = 0;
-let seed = 20261002;
+console.log('  阈值：标准差 < ' + S.FLAT_STD + ' 分');
+let N = 4000, fl = 0, seed = 20261002;
 const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
 for (let i = 0; i < N; i++) {
   const a = {};
   qs.forEach(q => { a[q.id] = 1 + Math.floor(rnd() * 5); });
-  const sc = S.computeScores(qs, a);
-  const vals = S.DIM_KEYS.map(k => sc.pct[k]);
-  const spread = Math.max.apply(null, vals) - Math.min.apply(null, vals);
-  if (S.isFlat(sc)) { flat++; spreadSum += spread; }
+  if (S.isFlat(S.computeScores(qs, a))) fl++;
 }
-const rate = flat / N * 100;
-ok('随机作答被判为「八项持平」的比例', rate.toFixed(2) + '%（' + flat + '/' + N + '）');
+const rate = fl / N * 100;
+ok('随机作答被判为「八项持平」的比例', rate.toFixed(2) + '%（' + fl + '/' + N + '）');
 if (rate < 1) ok('误判率低于 1%，阈值合理');
 else bad('误判率 ' + rate.toFixed(2) + '% 偏高，正常作答会丢掉天赋组合');
-if (flat) ok('被误判的作答平均极差', (spreadSum / flat).toFixed(1) + ' 分（真正的持平应该只有几分）');
-
-/* 具体反例：极差 20 分绝不能被判持平 */
 {
-  const a = {};
-  const want = { LIN: 5, LOG: 4, SPA: 4, MUS: 3, BOD: 3, PER: 2, INT: 2, NAT: 1 };
-  qs.forEach(q => { a[q.id] = want[Object.keys(q.dims)[0]]; });
-  const sc = S.computeScores(qs, a);
-  const vals = S.DIM_KEYS.map(k => sc.pct[k]);
+  const sc = S.computeScores(qs, aBy({ LIN: 5, LOG: 4, SPA: 4, MUS: 3, BOD: 3, PER: 2, INT: 2, NAT: 1 }));
+  const vals = K.map(k => sc.pct[k]);
   const spread = Math.max.apply(null, vals) - Math.min.apply(null, vals);
   if (!S.isFlat(sc)) ok('极差 ' + spread + ' 分的正常作答不会被误判成持平');
   else bad('极差 ' + spread + ' 分却被判成持平');
 }
 
-console.log('\n' + '='.repeat(50));
+/* ============ D. 名人匹配 ============ */
+console.log('\n===== D. 名人匹配 =====');
+{
+  const flatSc = S.computeScores(qs, aAll(3));
+  const m = S.matchFigures(flatSc, figs, 3);
+  if (m.length === 0) ok('八项持平时不硬套名人', '返回空，结果页会如实说明');
+  else bad('持平时本不该匹配名人，却给了 ' + m[0].figure.name);
+}
+{
+  const shaped = S.computeScores(qs, aBy({ LOG: 5, INT: 4, SPA: 4, NAT: 3, MUS: 1, PER: 1 }));
+  const m = S.matchFigures(shaped, figs, 3);
+  if (m.length === 3 && m[0].sim >= m[1].sim && m[1].sim >= m[2].sim) {
+    ok('有形状时给出 3 位，且按相似度降序', m.map(x => x.figure.name).join(' → '));
+  } else bad('名人匹配排序不对', JSON.stringify(m.map(x => x.figure.name)));
+}
+{
+  /* 核心性质：只比形状不比高低。同一形状、整体差一档，必须匹配到同一位。
+   * 注意构造方式：必须让**八个维度统一平移**（都降 1 档），形状才真的不变。
+   * 用 aBy 会把没写到的维度默认成 3，那样平移的就不是同一个常量，形状会变。 */
+  const full = (base, over) => {
+    const m = {};
+    K.forEach(k => { m[k] = base; });
+    Object.keys(over).forEach(k => { m[k] = over[k]; });
+    return m;
+  };
+  const pattern = { LOG: 5, PER: 2, INT: 4, NAT: 2 };                 // 其余维度 = 3
+  const shifted = { LOG: 4, PER: 1, INT: 3, NAT: 1 };                 // 同上整体 -1，其余 = 2
+  const scA = S.computeScores(qs, aBy(full(3, pattern)));
+  const scB = S.computeScores(qs, aBy(full(2, shifted)));
+  /* 先证明两种作答的形状确实相同（中心化之后向量一致），再验证匹配结果 */
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const cc = sc => { const v = K.map(k => sc.pct[k]); const m = mean(v); return v.map(x => x - m); };
+  const sameShape = cc(scA).every((x, i) => Math.abs(x - cc(scB)[i]) < 1e-9);
+  const ma = S.matchFigures(scA, figs, 1)[0];
+  const mb = S.matchFigures(scB, figs, 1)[0];
+  if (!sameShape) bad('测试自身有问题：构造出的两种作答形状并不相同');
+  else if (ma && mb && ma.figure.id === mb.figure.id) {
+    ok('同一形状、整体差一档 → 匹配到同一位名人', ma.figure.name + '（说明只比形状不比高低）');
+  } else {
+    bad('形状相同的两种作答匹配到了不同的人', (ma && ma.figure.name) + ' vs ' + (mb && mb.figure.name));
+  }
+}
+{
+  /* 形状明显不同的人，不该匹配到同一位（否则匹配等于随机） */
+  const heads = {};
+  let dup = 0;
+  K.forEach(k => {
+    const anchor = {}; K.forEach(x => { anchor[x] = 2; }); anchor[k] = 5;
+    const m = S.matchFigures(S.computeScores(qs, aBy(anchor)), figs, 1)[0];
+    if (m) { if (heads[m.figure.id]) dup++; heads[m.figure.id] = true; }
+  });
+  ok('八个「单项独高」的形状共匹配到', Object.keys(heads).length + ' 位不同名人' + (dup ? '（有重复）' : ''));
+}
+ok('组合解读文案能生成', '「' + S.comboLine(S.computeScores(qs, aBy({ LOG: 5, SPA: 4, INT: 4, MUS: 1 }))).slice(0, 28) + '…」');
+
+console.log('\n' + '='.repeat(52));
 if (fail) { console.log('失败 ' + fail + ' 项 / 通过 ' + pass + ' 项'); process.exitCode = 1; }
 else console.log('全部通过（' + pass + ' 项）');
