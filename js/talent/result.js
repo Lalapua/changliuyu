@@ -62,8 +62,8 @@
     var top = S.topDims(state.scores, 3);
     state.talent = state.flat ? null : DATA.talentById(top[0]);
 
-    /* ---- 最像的名人（同样比的是形状，持平时为空）---- */
-    state.figures = S.matchFigures(state.scores, DATA.figures(), 3);
+    /* ---- 最像的名人（只取一位；同样比的是形状，持平时为空）---- */
+    state.figures = S.matchFigures(state.scores, DATA.figures(), 1);
 
     /* ---- 渲染 ---- */
     renderHero();
@@ -230,6 +230,11 @@
    * 四、和你最像的名人
    * ============================================================ */
 
+  /** 只渲染一位名人。
+   *  曾经给过「最像 + 也有一点像」三张卡，但用户实测反馈不对劲 ——
+   *  三位并列时，后面两位的匹配质量明显下降（候选池被前一位挤掉之后，
+   *  剩下的往往只是「都有点像」），不如把一位说准。
+   *  匹配逻辑本身也改了：先按「最强项落在我前三项里」筛候选，再比形状。 */
   function renderFigures() {
     var box = els.figureList;
     CLJ.clear(box);
@@ -244,30 +249,22 @@
       return;
     }
 
-    /* 最像的那位 + 另外两位，全部塞进同一个容器 —— 间距交给 flex gap 统一管，
-     * 不分成两个容器（那样首卡的间距会受容器边距影响，看起来忽大忽小）。 */
-    var first = state.figures[0].figure;
+    var f = state.figures[0].figure;
     var main = CLJ.el('article', { class: 'result-card result-card--main card card--glow anim-pop' });
     main.appendChild(CLJ.el('div', { class: 'result-card__head' }, [
       CLJ.el('div', { class: 'result-card__title-box' }, [
         CLJ.el('div', { class: 'tag-row' }, [
-          CLJ.el('span', { class: 'chip', text: '思维方式相近' })
+          CLJ.el('span', { class: 'chip', text: '思维方式最接近' }),
+          CLJ.el('span', {
+            class: 'chip chip--plain chip--sm',
+            text: S.dim(S.figurePrimary(f)).name + '见长'
+          })
         ]),
-        CLJ.el('h3', { class: 'result-card__name', text: first.name }),
-        CLJ.el('p', { class: 'result-card__reason', text: first.why })
+        CLJ.el('h3', { class: 'result-card__name', text: f.name }),
+        CLJ.el('p', { class: 'result-card__reason', text: f.why })
       ])
     ]));
     box.appendChild(main);
-
-    state.figures.slice(1).forEach(function (m, i) {
-      var card = CLJ.el('article', { class: 'result-card card anim-up d-' + Math.min(i + 1, 6) });
-      card.appendChild(CLJ.el('div', { class: 'tag-row' }, [
-        CLJ.el('span', { class: 'chip chip--plain chip--sm', text: '也有一点像' })
-      ]));
-      card.appendChild(CLJ.el('h3', { class: 'result-card__name', text: m.figure.name }));
-      card.appendChild(CLJ.el('p', { class: 'result-card__reason', text: m.figure.why }));
-      box.appendChild(card);
-    });
   }
 
   /* ============================================================
@@ -381,13 +378,12 @@
       };
     }
 
-    /* 最像的名人放成列表块 —— 和职业测试的「可能也适合」用的是同一套区块 */
+    /* 最像的那位名人放成一个列表块 —— 和职业测试的「可能也适合」用的是同一套区块。
+     * 只放一位：多列几位反而会把「最像」这件事说糊。 */
     if (state.figures.length) {
       spec.sections.push({
         label: '和你最像的名人',
-        rows: state.figures.map(function (m) {
-          return { name: m.figure.name, meta: '', value: '' };
-        })
+        rows: state.figures.map(function (m) { return { name: m.figure.name, meta: '', value: '' }; })
       });
     }
 

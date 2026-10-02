@@ -182,7 +182,7 @@ window.__REPORT = { steps: 0, finalBtn: '', hint: '', total: '' };
     ok('雷达图渲染', r.radar >= 5, r.radar + ' 个 polygon');
     ok('画像详解有内容', (r.talentName || '').length > 3, JSON.stringify(r.talentName));
     ok('「要留意」一条', r.watch === 1);
-    ok('最像的名人卡片', r.figures === 3, r.figures + ' 张');
+    ok('名人卡片只给一位', r.figures === 1, r.figures + ' 张');
     ok('保存图片按钮在', r.saveBtn);
     ok('「你可能还想测」不再显示天赋测试自己', r.others >= 1, r.others + ' 个');
     ok('标签页标题', JSON.stringify(r.title));

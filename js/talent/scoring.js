@@ -200,19 +200,44 @@
     return (dot / (Math.sqrt(na) * Math.sqrt(nb)) + 1) / 2;
   }
 
+  /** 某位名人最突出的那项能力。用于筛选候选，见 matchFigures */
+  function figurePrimary(f) {
+    var best = null, max = -1;
+    DIM_KEYS.forEach(function (k) {
+      var v = Number((f.w && f.w[k]) || 0);
+      if (v > max) { max = v; best = k; }
+    });
+    return best;
+  }
+
   /**
    * 按形状相似度匹配名人。返回 [{ figure, sim }]，已按相似度降序。
    * 八项持平时返回空数组 —— 调用方据此显示「不硬套」的文案。
+   *
+   * **先筛候选，再比形状。** 只比形状会出离谱结论，实测随机作答里有
+   * 6.2% 会匹配到「最强项根本不在你前三」的人 —— 例如你的长板是共情，
+   * 却给你一位最强项是动觉的人。形状相似度本身没算错（那个人确实和你
+   * 重叠很多），但「最像的名人」这句话承诺了主要特质要对得上。
+   *
+   * 筛选标准取的是**最强项 = 你的 Top-1**（不是前三）：用户看到「我最突出
+   * 的是共情」，期待的就是一位同样以共情见长的人。放宽到前三的话，
+   * 逻辑也高的人仍可能拿到一位逻辑见长的名人，读起来还是别扭。
+   * 代价是每位用户只在 3~5 位候选里挑，库大一点就够用。
    */
   function matchFigures(scores, figures, n) {
     if (!figures || !figures.length) return [];
     if (isFlat(scores)) return [];
     var U = centered(vectorOf(scores.pct, 100));
-    var ranked = figures.map(function (f) {
+
+    var top1 = topDims(scores, 1)[0];
+    var pool = figures.filter(function (f) { return figurePrimary(f) === top1; });
+    if (!pool.length) pool = figures;          // 兜底：理论上不会发生
+
+    var ranked = pool.map(function (f) {
       return { figure: f, sim: shapeSim(U, centered(vectorOf(f.w, 5))) };
     });
     ranked.sort(function (a, b) { return b.sim - a.sim; });
-    return ranked.slice(0, Math.max(1, n || 3));
+    return ranked.slice(0, Math.max(1, n || 1));
   }
 
   /* ------------------------------------------------------------
@@ -244,6 +269,7 @@
     levelProfile: levelProfile,
     headLabel: headLabel,
     shapeSim: shapeSim,
+    figurePrimary: figurePrimary,
     matchFigures: matchFigures,
     comboLine: comboLine,
     /** 维度信息，取不到时给个兜底，调用方不用判空 */

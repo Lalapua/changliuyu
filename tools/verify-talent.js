@@ -192,6 +192,37 @@ console.log('\n===== D. 名人匹配 =====');
   });
   ok('八个「单项独高」的形状共匹配到', Object.keys(heads).length + ' 位不同名人' + (dup ? '（有重复）' : ''));
 }
+{
+  /* 核心性质：**名人的最强项必须落在用户的前三项里**。
+   * 曾经只比形状，实测随机作答有 6.2% 会给出「答非所问」的结果 ——
+   * 比如你的长板是共情，却匹配到一位最强项是动觉的人。形状相似度没算错，
+   * 但「最像的名人」这句话承诺了主要特质要对得上。 */
+  let seed2 = 424242, n = 0, bad = 0, firstBad = null;
+  const rnd2 = () => (seed2 = (seed2 * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  for (let i = 0; i < 5000; i++) {
+    const a = {};
+    qs.forEach(q => { a[q.id] = 1 + Math.floor(rnd2() * 5); });
+    const sc = S.computeScores(qs, a);
+    if (S.isFlat(sc)) continue;
+    const m = S.matchFigures(sc, figs, 1)[0];
+    if (!m) continue;
+    n++;
+    const top1 = S.topDims(sc, 1)[0];
+    const fp = S.figurePrimary(m.figure);
+    if (fp !== top1) {
+      bad++;
+      if (!firstBad) firstBad = m.figure.name + '（最强项 ' + S.dim(fp).name + '）给了最强项是 ' + S.dim(S.topDims(sc,1)[0]).name + ' 的人';
+    }
+  }
+  ok('随机作答 5000 组中「名人的最强项 ≠ 你的最强项」的比例', (bad / n * 100).toFixed(1) + '%（' + bad + '/' + n + '）');
+  if (bad === 0) ok('名人匹配的最强项总是和你的最强项一致');
+  else bad('有 ' + bad + ' 组答非所问，例如 ' + firstBad);
+}
+{
+  /* 只给一位：多的那几位其实说不准，不如把一位说准 */
+  const shaped = S.computeScores(qs, aBy({ PER: 5, INT: 4, LIN: 4, LOG: 2 }));
+  ok('默认只返回一位名人', S.matchFigures(shaped, figs, 1).length === 1);
+}
 ok('组合解读文案能生成', '「' + S.comboLine(S.computeScores(qs, aBy({ LOG: 5, SPA: 4, INT: 4, MUS: 1 }))).slice(0, 28) + '…」');
 
 console.log('\n' + '='.repeat(52));
