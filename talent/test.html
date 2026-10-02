@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <meta name="theme-color" content="#0B0B0F">
-  <meta name="description" content="你适合什么样的职业 · 答题页。仅供娱乐，不构成专业建议。">
+  <meta name="description" content="你的天赋是什么 · 答题页。仅供娱乐，不构成专业建议。">
   <title>答题中｜长留玉</title>
 
   <link rel="icon" href="../assets/ip.png">
@@ -26,7 +26,7 @@
         <span class="brand__mark" data-clj-logo aria-hidden="true"></span>
         <span class="brand__name" data-clj-brand>长留玉</span>
       </span>
-      <span class="chip chip--plain chip--sm" id="version-tag">精简版</span>
+      <span class="chip chip--plain chip--sm" id="version-tag">轻量版</span>
     </div>
 
     <!-- 进度 -->
@@ -35,7 +35,7 @@
         <span>
           <span class="quiz-progress__now t-num" id="step-now">01</span>
           <span class="t-num"> / </span>
-          <span class="t-num" id="step-all">30</span>
+          <span class="t-num" id="step-all">40</span>
         </span>
         <span>已答 <span class="t-num" id="answered-count">0</span> 题</span>
       </div>
@@ -49,7 +49,7 @@
     <main class="app__main quiz-main">
 
       <div class="question-card" id="question-card">
-        <div class="question-card__meta" id="question-meta">第 1 / 30 题</div>
+        <div class="question-card__meta" id="question-meta">第 1 / 40 题</div>
         <h1 class="question-card__text" id="question-text">正在加载题目…</h1>
       </div>
 
@@ -63,8 +63,7 @@
         <button class="btn btn--ghost quiz-nav__prev" id="btn-prev" type="button">上一题</button>
         <button class="btn btn--primary" id="btn-next" type="button">下一题</button>
       </div>
-      <!-- 提示与免责声明并成一块：原来免责声明单独占一整个页脚（63px），
-           在手机上就是白白多吃掉一屏，收进这里刚好。 -->
+      <!-- 提示与免责声明并成一块：免责声明单独占一整个页脚会在手机上白吃一屏 -->
       <p class="quiz-nav__hint">
         <span id="nav-hint">选一个最接近你的选项，选完自动进入下一题</span>
         <span class="quiz-nav__legal"><span data-clj-brand>长留玉</span> · <span data-clj-disclaimer></span></span>
@@ -73,17 +72,16 @@
 
   </div>
 
-  <!-- 脚本顺序不能乱：config → global → 题库 → 算法 → 数据层 → 页面逻辑 -->
+  <!-- 脚本顺序不能乱：config → global → 题库 → 画像库 → 算法 → 数据层 → 数据源声明 → 引擎 -->
   <script src="../js/config.js"></script>
   <script src="../js/global.js"></script>
-  <script src="../js/career/questions-light.js"></script>
-  <script src="../js/career/questions-full-part1.js"></script>
-  <script src="../js/career/questions-full-part2.js"></script>
-  <script src="../js/career/questions-full-part3.js"></script>
-  <script src="../js/career/questions-full-part4.js"></script>
-  <script src="../js/career/scoring.js"></script>
-  <script src="../js/career/data.js"></script>
-  <script src="../js/career/quiz-boot.js"></script>
+  <script src="../js/talent/questions-light.js"></script>
+  <script src="../js/talent/questions-full.js"></script>
+  <script src="../js/talent/scoring.js"></script>
+  <script src="../js/talent/talents.js"></script>
+  <script src="../js/talent/figures.js"></script>
+  <script src="../js/talent/data.js"></script>
+  <script src="../js/talent/quiz-boot.js"></script>
   <script src="../js/quiz.js"></script>
 </body>
 </html>

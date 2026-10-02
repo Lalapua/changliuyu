@@ -282,6 +282,13 @@
  * 3. 结果页
  * ============================================================ */
 .result-hero { display: flex; flex-direction: column; gap: var(--sp-2); }
+/* 天赋测试的大字是中文画像名（精准的表达者），上面那套 44px + 0.08em 字距
+ * 是按霍兰德代码这种拉丁字母调的，套在中文上又大又散，所以收一收。 */
+.result-hero__code--cjk {
+  font-size: 33px;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+}
 .result-hero__code {
   font-family: var(--font-num);
   font-size: 44px;
@@ -338,9 +345,9 @@
 .dim-row__comment { margin-top: 7px; font-size: 12px; color: var(--text-3); line-height: 1.7; }
 
 /* 职业卡片 */
-.career-card--main { padding: var(--sp-3); }
-.career-card__head { display: flex; gap: var(--sp-2); align-items: center; }
-.career-card__ring {
+.result-card--main { padding: var(--sp-3); }
+.result-card__head { display: flex; gap: var(--sp-2); align-items: center; }
+.result-card__ring {
   flex: 0 0 auto;
   width: 76px; height: 76px;
   border-radius: 50%;
@@ -353,21 +360,21 @@
     var(--card-2);
   border: 1.5px solid var(--accent-line);
 }
-.career-card__ring-num { font-size: 20px; font-weight: 800; color: var(--accent-3); line-height: 1.1; }
-.career-card__ring-label { font-size: 10px; color: var(--text-3); margin-top: 2px; }
-.career-card__title-box { min-width: 0; flex: 1 1 auto; }
-.career-card__name { font-size: 21px; font-weight: 700; margin-top: 6px; }
-.career-card__reason { margin-top: 6px; font-size: 12px; color: var(--text-2); line-height: 1.7; }
-.career-card__desc { margin-top: var(--sp-2); }
-.career-card__block { margin-top: var(--sp-2); padding-top: var(--sp-2); border-top: 1px solid var(--border); }
-.career-card__label { font-size: 11px; color: var(--text-3); letter-spacing: 0.1em; margin-bottom: 8px; }
+.result-card__ring-num { font-size: 20px; font-weight: 800; color: var(--accent-3); line-height: 1.1; }
+.result-card__ring-label { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+.result-card__title-box { min-width: 0; flex: 1 1 auto; }
+.result-card__name { font-size: 21px; font-weight: 700; margin-top: 6px; }
+.result-card__reason { margin-top: 6px; font-size: 12px; color: var(--text-2); line-height: 1.7; }
+.result-card__desc { margin-top: var(--sp-2); }
+.result-card__block { margin-top: var(--sp-2); padding-top: var(--sp-2); border-top: 1px solid var(--border); }
+.result-card__label { font-size: 11px; color: var(--text-3); letter-spacing: 0.1em; margin-bottom: 8px; }
 
-.career-alt { padding: var(--sp-2); }
-.career-alt__top { display: flex; align-items: baseline; gap: 8px; }
-.career-alt__rank { font-size: 12px; color: var(--text-3); font-weight: 700; }
-.career-alt__name { font-size: 16px; font-weight: 700; }
-.career-alt__fit { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--accent-3); }
-.career-alt__meta { margin-top: 4px; font-size: 11px; color: var(--text-3); line-height: 1.6; }
+.result-alt { padding: var(--sp-2); }
+.result-alt__top { display: flex; align-items: baseline; gap: 8px; }
+.result-alt__rank { font-size: 12px; color: var(--text-3); font-weight: 700; }
+.result-alt__name { font-size: 16px; font-weight: 700; }
+.result-alt__fit { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--accent-3); }
+.result-alt__meta { margin-top: 4px; font-size: 11px; color: var(--text-3); line-height: 1.6; }
 
 /* 行动建议 */
 .advice-list { display: flex; flex-direction: column; gap: 10px; }
@@ -456,6 +463,6 @@
   .question-card__text { font-size: 19px; }
   .result-hero__code { font-size: 38px; }
   .result-hero__title { font-size: 22px; }
-  .career-card__ring { width: 66px; height: 66px; }
-  .career-card__ring-num { font-size: 17px; }
+  .result-card__ring { width: 66px; height: 66px; }
+  .result-card__ring-num { font-size: 17px; }
 }

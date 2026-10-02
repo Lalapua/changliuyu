@@ -86,8 +86,8 @@
     els.radar = CLJ.qs('#radar-holder');
     els.dims = CLJ.qs('#dim-bars');
     els.main = CLJ.qs('#career-main');
-    els.alt = CLJ.qs('#career-alt');
-    els.altWrap = CLJ.qs('#career-alt-wrap');
+    els.alt = CLJ.qs('#result-alt');
+    els.altWrap = CLJ.qs('#result-alt-wrap');
     els.advice = CLJ.qs('#advice-list');
     els.others = CLJ.qs('#other-tests');
     els.strengths = CLJ.qs('#strength-tags');
@@ -181,102 +181,17 @@
    * 三、雷达图（纯 SVG 手绘，零依赖、可缩放、可截图）
    * ============================================================ */
 
+  /* 雷达图的 SVG 生成器已抽到 js/radar.js（公共模块，轴数可变）。 */
+
+  /* 本页用的一层薄封装：把「当前结果的 pct + 六维名称」固定下来。
+   * 抽公共模块之后，调用点不用每次都手写那一坨 spec。 */
   function buildRadarSVG(pct, size) {
-    size = size || 300;
-    var keys = S.DIM_KEYS;
-    var n = keys.length;
-    var cx = size / 2;
-    var cy = size / 2;
-    var R = size * 0.315;                 // 数据半径，留出标签空间
-    var labelR = R * 1.24;
-
-    function point(i, ratio) {
-      var ang = -Math.PI / 2 + i * (2 * Math.PI / n);
-      return [cx + Math.cos(ang) * R * ratio, cy + Math.sin(ang) * R * ratio];
-    }
-
-    function polygon(ratio) {
-      var out = [];
-      for (var i = 0; i < n; i++) {
-        var p = point(i, ratio);
-        out.push(p[0].toFixed(1) + ',' + p[1].toFixed(1));
-      }
-      return out.join(' ');
-    }
-
-    var svg = [];
-    svg.push('<svg class="radar" viewBox="0 0 ' + size + ' ' + size + '" role="img" ' +
-             'aria-label="六维度雷达图" xmlns="http://www.w3.org/2000/svg">');
-    svg.push('<defs>' +
-      '<linearGradient id="cljRadarFill" x1="0" y1="0" x2="0" y2="1">' +
-        '<stop offset="0%" stop-color="#A78BFA" stop-opacity="0.55"/>' +
-        '<stop offset="100%" stop-color="#6C5CE7" stop-opacity="0.18"/>' +
-      '</linearGradient>' +
-      '<radialGradient id="cljRadarGlow" cx="50%" cy="50%" r="50%">' +
-        '<stop offset="0%" stop-color="#6C5CE7" stop-opacity="0.22"/>' +
-        '<stop offset="100%" stop-color="#6C5CE7" stop-opacity="0"/>' +
-      '</radialGradient>' +
-    '</defs>');
-
-    // 背景光晕
-    svg.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * 1.18).toFixed(1) +
-             '" fill="url(#cljRadarGlow)"/>');
-
-    // 四层网格
-    [0.25, 0.5, 0.75, 1].forEach(function (r) {
-      svg.push('<polygon points="' + polygon(r) + '" fill="none" ' +
-               'stroke="rgba(255,255,255,' + (r === 1 ? '0.18' : '0.07') + ')" ' +
-               'stroke-width="1"/>');
+    return CLJ_RADAR.svg(pct, size, {
+      keys: S.DIM_KEYS,
+      nameOf: function (k) { return S.dim(k).name; }
     });
-
-    // 六条轴线
-    for (var i = 0; i < n; i++) {
-      var p = point(i, 1);
-      svg.push('<line x1="' + cx + '" y1="' + cy + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) +
-               '" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>');
-    }
-
-    // 数据多边形
-    var dataPts = [];
-    for (var j = 0; j < n; j++) {
-      var ratio = S.clamp(pct[keys[j]] || 0, 0, 100) / 100;
-      var q = point(j, Math.max(ratio, 0.06));   // 最小值给一点视觉余量，避免完全塌到圆心
-      dataPts.push(q);
-    }
-    svg.push('<polygon points="' +
-             dataPts.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') +
-             '" fill="url(#cljRadarFill)" stroke="#A78BFA" stroke-width="2" ' +
-             'stroke-linejoin="round"/>');
-
-    // 顶点圆点
-    dataPts.forEach(function (p) {
-      svg.push('<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) +
-               '" r="3.5" fill="#F5F5F7" stroke="#8B7CF6" stroke-width="2"/>');
-    });
-
-    // 轴标签：维度名 + 分值
-    for (var k = 0; k < n; k++) {
-      var lp = point(k, labelR / R);
-      var dx = lp[0] - cx;
-      var anchor = dx > size * 0.06 ? 'start' : (dx < -size * 0.06 ? 'end' : 'middle');
-      var dy = lp[1] - cy;
-      var baseline = dy > size * 0.08 ? 'hanging' : (dy < -size * 0.08 ? 'auto' : 'middle');
-
-      svg.push('<text x="' + lp[0].toFixed(1) + '" y="' + lp[1].toFixed(1) + '" ' +
-               'text-anchor="' + anchor + '" dominant-baseline="' + baseline + '" ' +
-               'fill="#A1A1AA" font-size="10" font-family="system-ui,-apple-system,\'PingFang SC\',sans-serif">' +
-               S.dim(keys[k]).name +
-               '</text>');
-      svg.push('<text x="' + lp[0].toFixed(1) + '" y="' + (lp[1] + 13).toFixed(1) + '" ' +
-               'text-anchor="' + anchor + '" dominant-baseline="' + baseline + '" ' +
-               'fill="#F5F5F7" font-size="12" font-weight="600" ' +
-               'font-family="system-ui,-apple-system,\'PingFang SC\',sans-serif">' +
-               (pct[keys[k]] || 0) + '</text>');
-    }
-
-    svg.push('</svg>');
-    return svg.join('');
   }
+
 
   function renderRadar() {
     els.radar.innerHTML = buildRadarSVG(state.scores.pct, 300);
@@ -349,31 +264,31 @@
 
   function careerMainCard(m) {
     var c = m.career;
-    var card = CLJ.el('article', { class: 'career-card career-card--main card card--glow anim-pop' });
+    var card = CLJ.el('article', { class: 'result-card result-card--main card card--glow anim-pop' });
 
     // 顶部：匹配度 + 名称
-    var head = CLJ.el('div', { class: 'career-card__head' }, [
-      CLJ.el('div', { class: 'career-card__ring' }, [
-        CLJ.el('span', { class: 'career-card__ring-num t-num', text: m.fit + '%' }),
-        CLJ.el('span', { class: 'career-card__ring-label', text: '匹配度' })
+    var head = CLJ.el('div', { class: 'result-card__head' }, [
+      CLJ.el('div', { class: 'result-card__ring' }, [
+        CLJ.el('span', { class: 'result-card__ring-num t-num', text: m.fit + '%' }),
+        CLJ.el('span', { class: 'result-card__ring-label', text: '匹配度' })
       ]),
-      CLJ.el('div', { class: 'career-card__title-box' }, [
+      CLJ.el('div', { class: 'result-card__title-box' }, [
         CLJ.el('div', { class: 'tag-row' }, [
           CLJ.el('span', { class: 'chip', text: c.category || '未分类' }),
           CLJ.el('span', { class: 'chip chip--plain', text: '最佳匹配' })
         ]),
-        CLJ.el('h3', { class: 'career-card__name', text: c.name }),
-        CLJ.el('p', { class: 'career-card__reason', text: m.reason || '' })
+        CLJ.el('h3', { class: 'result-card__name', text: c.name }),
+        CLJ.el('p', { class: 'result-card__reason', text: m.reason || '' })
       ])
     ]);
     card.appendChild(head);
 
-    card.appendChild(CLJ.el('p', { class: 't-body career-card__desc', text: c.desc || '' }));
+    card.appendChild(CLJ.el('p', { class: 't-body result-card__desc', text: c.desc || '' }));
 
     // 推荐技能
     if (c.skills && c.skills.length) {
-      var skillBox = CLJ.el('div', { class: 'career-card__block' }, [
-        CLJ.el('div', { class: 'career-card__label', text: '推荐积累的技能' })
+      var skillBox = CLJ.el('div', { class: 'result-card__block' }, [
+        CLJ.el('div', { class: 'result-card__label', text: '推荐积累的技能' })
       ]);
       var tr = CLJ.el('div', { class: 'tag-row' });
       c.skills.forEach(function (s) { tr.appendChild(CLJ.el('span', { class: 'chip', text: s })); });
@@ -383,8 +298,8 @@
 
     // 工作环境
     if (c.env) {
-      card.appendChild(CLJ.el('div', { class: 'career-card__block' }, [
-        CLJ.el('div', { class: 'career-card__label', text: '典型工作环境' }),
+      card.appendChild(CLJ.el('div', { class: 'result-card__block' }, [
+        CLJ.el('div', { class: 'result-card__label', text: '典型工作环境' }),
         CLJ.el('p', { class: 't-body', text: c.env })
       ]));
     }
@@ -392,8 +307,8 @@
     // 全量版追加：该职业最看重的两个维度
     if (state.version === 'full') {
       var keys = S.topDimsOf(c);
-      var box = CLJ.el('div', { class: 'career-card__block' }, [
-        CLJ.el('div', { class: 'career-card__label', text: '这个职业最看重' })
+      var box = CLJ.el('div', { class: 'result-card__block' }, [
+        CLJ.el('div', { class: 'result-card__label', text: '这个职业最看重' })
       ]);
       var tr2 = CLJ.el('div', { class: 'tag-row' });
       keys.forEach(function (k) {
@@ -409,13 +324,13 @@
 
   function careerAltCard(m, i) {
     var c = m.career;
-    return CLJ.el('article', { class: 'career-alt card anim-up d-' + Math.min(i + 2, 6) }, [
-      CLJ.el('div', { class: 'career-alt__top' }, [
-        CLJ.el('span', { class: 'career-alt__rank t-num', text: '#' + (i + 2) }),
-        CLJ.el('h4', { class: 'career-alt__name', text: c.name }),
-        CLJ.el('span', { class: 'career-alt__fit t-num', text: m.fit + '%' })
+    return CLJ.el('article', { class: 'result-alt card anim-up d-' + Math.min(i + 2, 6) }, [
+      CLJ.el('div', { class: 'result-alt__top' }, [
+        CLJ.el('span', { class: 'result-alt__rank t-num', text: '#' + (i + 2) }),
+        CLJ.el('h4', { class: 'result-alt__name', text: c.name }),
+        CLJ.el('span', { class: 'result-alt__fit t-num', text: m.fit + '%' })
       ]),
-      CLJ.el('p', { class: 'career-alt__meta', text: (c.category || '') + ' · ' + (c.env || '') }),
+      CLJ.el('p', { class: 'result-alt__meta', text: (c.category || '') + ' · ' + (c.env || '') }),
       CLJ.el('p', { class: 't-body', text: c.desc || '' })
     ]);
   }
@@ -487,8 +402,15 @@
     return '我的职业倾向是「' + name + '」' + CFG.SHARE_TITLE_SUFFIX;
   }
 
-  function bindActions() {
-    CLJ.qs('#btn-retry').addEventListener('click', function () {
+  /** 导出的图片文件名。这里带「职业测试」四个字，所以留在本文件，
+   *  不放进公共的 js/save.js —— 那边只知道一个通用的默认名。 */
+  function filename() {
+    var d = new Date();
+    var stamp = d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2);
+    return CFG.BRAND + '-职业测试-' + stamp + '.png';
+  }
+
+  function bindActions() {    CLJ.qs('#btn-retry').addEventListener('click', function () {
       CLJ.store.remove(KEY_FINAL);
       CLJ.store.remove(KEY_PROGRESS);
       window.location.href = 'index.html';
@@ -498,115 +420,20 @@
       window.location.href = CLJ_ASSET('index.html');
     });
 
-    CLJ.qs('#btn-save-img').addEventListener('click', saveResultImage);
-  }
-
-  /* ------------------------------------------------------------
-   * 结果图片
-   * ---------------------------------------------------------- */
-
-
-  function filename() {
-    var d = new Date();
-    var stamp = d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2);
-    return CFG.BRAND + '-职业测试-' + stamp + '.png';
-  }
-
-  /* ------------------------------------------------------------
-   * 结果图片：单一的自绘 Canvas 渲染器
-   * ------------------------------------------------------------
-   * 原来是三级降级：html2canvas 渲染真实 DOM → 本地 Canvas 手绘 → 报错。
-   * 现在把 html2canvas 整条路砍掉，只留自绘，理由有三个：
-   *   1. 它要联网从 CDN 拉 200KB，断网或内网环境下这一整条路直接作废；
-   *   2. 它把 DOM 克隆进 iframe 再截图，画面里只要有一张跨域图片就会污染
-   *      画布，之后 toBlob 抛 SecurityError，图必然存不下来 —— 之前线上
-   *      报「生成图片失败」就是这个原因；
-   *   3. 为了让它的渲染结果正确，还得额外维护一整套 .poster 样式，
-   *      两处容易走散。
-   * 自绘方案零依赖、离线可用、画布永远干净（海报里不放任何 <img>），
-   * 代价只是雷达图也得自己画 —— 那本来就是现成的三角函数。
-   * 出图分辨率取 2 倍（840px 宽），手机上看着是高清的。
-   * ---------------------------------------------------------- */
-
-  /** 把各种异常翻译成一句人话，直接显示在提示条里 */
-  function shortErr(e) {
-    var m = (e && (e.message || e.name)) ? String(e.message || e.name) : String(e || '未知错误');
-    if (/SecurityError|tainted|insecure|origin/i.test(m)) return '画布被跨域内容污染';
-    if (/toBlob|toDataURL/i.test(m)) return '画布导出被拒绝';
-    if (/fetch|network|load|加载|不可用/i.test(m)) return '外部依赖加载失败';
-    if (/过大|内存|quota/i.test(m)) return '画布过大，内存不足';
-    return m.replace(/\s+/g, ' ').slice(0, 32);
-  }
-
-  /** 导出 canvas。被污染的画布会在这里抛 SecurityError —— 这是最关键的一道关 */
-  function exportBlob(canvas) {
-    return new Promise(function (resolve, reject) {
-      if (!canvas) { reject(new Error('没有拿到画布')); return; }
-      if (typeof canvas.toBlob !== 'function') {
-        // 极老浏览器没有 toBlob：退回 dataURL 探一次，能出就当作通过
-        try { canvas.toDataURL('image/png'); resolve(null); } catch (e) { reject(e); }
-        return;
-      }
-      try {
-        canvas.toBlob(function (blob) {
-          if (blob) resolve(blob);
-          else reject(new Error('toBlob 返回空，画布可能过大或内存不足'));
-        }, 'image/png');
-      } catch (e) {
-        reject(e);          // 同步抛出：通常是 SecurityError
-      }
+    /* 出图与交付整套逻辑在 js/save.js 里，这里只告诉它「这张图怎么生成、
+     * 叫什么名字、分享时用什么标题」。 */
+    CLJ.qs('#btn-save-img').addEventListener('click', function () {
+      CLJ_SAVE.saveResultImage({
+        buildCanvas: function () { return CLJ_POSTER.render(posterSpec()); },
+        filename: filename,
+        shareTitle: buildResultTitle
+      });
     });
   }
 
-  function saveResultImage() {
-    if (state.busy) return;
-    state.busy = true;
-    var btn = CLJ.qs('#btn-save-img');
-    var old = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = '正在生成…';
+  /* 结果图片的保存与交付已抽到 js/save.js（公共模块）。
+   * 这里只负责用当前结果拼出 buildCanvas / filename / shareTitle。 */
 
-    // 兜底保险：任何环节卡死，按钮都不会永远停在「正在生成…」
-    var guard = setTimeout(function () {
-      finish();
-      CLJ.toast('生成超时了，请重试', 3200);
-    }, 20000);
-
-    function finish() {
-      clearTimeout(guard);
-      state.busy = false;
-      btn.disabled = false;
-      btn.textContent = old;
-    }
-
-    var canvas;
-    try {
-      canvas = CLJ_POSTER.render(posterSpec());
-    } catch (e) {
-      console.error('[长留玉] 绘制结果图片失败：', e);
-      CLJ.toast('图片生成失败（' + shortErr(e) + '）', 4200);
-      finish();
-      return;
-    }
-
-    /* 先验一次「能不能安全导出」再交付：被污染的画布 toBlob 会抛
-     * SecurityError，那种画布是废的，早点发现比让用户看到一句
-     * 莫名其妙的失败要好。 */
-    exportBlob(canvas)
-      .then(function (blob) { return deliver(canvas, blob); })
-      .catch(function (e) {
-        console.error('[长留玉] 导出结果图片失败：', e);
-        CLJ.toast('图片存不下来（' + shortErr(e) + '），可以截图保存', 4200);
-      })
-      .then(finish, finish);
-  }
-
-  /* 海报绘制已抽到 js/poster.js（公共模块，两个测试共用）。
-   * 这里只剩「把 career 的数据翻译成 poster 的内容描述」这一层。 */
-
-  /** 把职业测试的结果翻译成海报的**内容描述**，真正画图的是 js/poster.js。
-   *  这一层只做数据映射，不碰任何画布细节 —— 换海报样式不用改这里，
-   *  加新测试也只是换一份 spec。 */
   function posterSpec() {
     var sc = state.scores;
     var uni = S.uniformProfile(sc);
@@ -653,93 +480,13 @@
     return spec;
   }
 
-
-  /** 把结果交给用户。顺序：系统分享 → 下载 → 铺图让用户长按保存。
-   *  注意最后一步：在内嵌预览、微信内置浏览器这类环境里，
-   *  <a download> 会被静默拦掉（不报错、也不下载），
-   *  所以不能盲目提示「已保存」，得看看到底有没有下载能力。 */
-  function deliver(canvas, blob) {
-    var name = filename();
-
-    var file = null;
-    if (blob) {
-      try { file = new File([blob], name, { type: 'image/png' }); } catch (e) { file = null; }
-    }
-
-    // 1. 能走系统分享就走分享（移动端最顺）
-    if (file && navigator.canShare) {
-      var canShare = false;
-      try { canShare = navigator.canShare({ files: [file] }); } catch (e) { canShare = false; }
-      if (canShare) {
-        return navigator.share({ files: [file], title: buildResultTitle(), text: CFG.SHARE_TEXT })
-          .then(function () { CLJ.toast('已唤起系统分享'); })
-          .catch(function () { download(); });
-      }
-    }
-
-    download();
-    return Promise.resolve();
-
-    function download() {
-      var url;
-      try {
-        url = canvas.toDataURL('image/png');
-      } catch (e) {
-        console.error('[长留玉] toDataURL 失败：', e);
-        CLJ.toast('这张图存不下来（' + shortErr(e) + '），可以截图保存', 3600);
-        return;
-      }
-
-      var a = document.createElement('a');
-      // 内嵌 iframe 里下载多半被拦；老浏览器可能不支持 download 属性
-      var canDownload = ('download' in a) && window.self === window.top;
-
-      if (canDownload) {
-        a.href = url;
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        CLJ.toast('图片已保存到下载目录');
-      } else {
-        showImageOverlay(url);
-      }
-    }
-  }
-
-  /** 不能直接下载时的兜底：把图铺在遮罩层上，让用户长按（桌面右键）保存 */
-  function showImageOverlay(dataUrl) {
-    var prev = CLJ.qs('#clj-save-overlay');
-    if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
-
-    var box = CLJ.el('div', {
-      id: 'clj-save-overlay',
-      class: 'save-overlay',
-      role: 'dialog',
-      'aria-label': '保存结果图片'
-    });
-    box.appendChild(CLJ.el('img', { class: 'save-overlay__img', src: dataUrl, alt: '你的测试结果图片' }));
-    box.appendChild(CLJ.el('p', {
-      class: 'save-overlay__hint',
-      text: '当前环境不允许直接下载，长按（电脑上右键）这张图保存即可'
-    }));
-    var close = CLJ.el('button', {
-      class: 'btn btn--ghost btn--sm save-overlay__close', type: 'button', text: '知道了'
-    });
-    close.addEventListener('click', function () { if (box.parentNode) box.parentNode.removeChild(box); });
-    box.addEventListener('click', function (e) {
-      if (e.target === box && box.parentNode) box.parentNode.removeChild(box);
-    });
-    box.appendChild(close);
-    document.body.appendChild(box);
-  }
-
-  /* ============================================================
-   * 十、启动
-   * ============================================================ */
+  /* ------------------------------------------------------------
+   * 启动
+   * ---------------------------------------------------------- */
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
   } else {
     boot();
   }
+
 })();

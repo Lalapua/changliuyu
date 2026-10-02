@@ -1,7 +1,7 @@
 /* ============================================================
  * 长留玉 · 答题交互行为自检（Node 运行，不参与线上）
  * ------------------------------------------------------------
- * 用一套极简的假 DOM + 假题库，把 js/career/test.js 真实跑起来，
+ * 用一套极简的假 DOM + 假题库，把 js/quiz.js（公共答题引擎）真实跑起来，
  * 验证「选中即自动跳题」这套交互有没有被改坏：
  *
  *   1. 首屏：选项数、按钮禁用态、提示文案
@@ -18,12 +18,12 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
-const SRC = fs.readFileSync(path.join(ROOT, 'js', 'career', 'test.js'), 'utf8');
+const SRC = fs.readFileSync(path.join(ROOT, 'js', 'quiz.js'), 'utf8');
 
 // 取出真实文件里的延迟值做一次合理性检查；再在测试副本里调小它，好让跑题瞬间完成
 const dm = /var ADVANCE_DELAY = (\d+);/.exec(SRC);
 if (!dm) {
-  console.error('✗ js/career/test.js 里找不到 ADVANCE_DELAY 声明，本测试需要同步更新');
+  console.error('✗ js/quiz.js 里找不到 ADVANCE_DELAY 声明，本测试需要同步更新');
   process.exit(1);
 }
 const DELAY = Number(dm[1]);
@@ -118,6 +118,21 @@ const QUANT = 3;
 const questions = [];
 for (let i = 1; i <= QUANT; i++) questions.push({ id: 'q' + i, text: '题目' + i });
 
+/* 假的数据源。引擎和 quiz-boot 都指向同一份，二者必须一致 ——
+ * 单独抽出来是为了避免 CLJ_DATA 与 CLJ_QUIZ.data 写成两个对象后走散。 */
+const MOCK_DATA = {
+  DEFAULT_VERSION: 'light',
+  VERSIONS: { light: { label: '精简版', badge: '30题' } },
+  normalizeVersion: v => v,
+  questions: () => questions
+};
+const MOCK_SCORING = {
+  OPTIONS: [
+    { value: 1, label: '完全不这样' }, { value: 2, label: '不太这样' },
+    { value: 3, label: '说不好' }, { value: 4, label: '比较像' }, { value: 5, label: '这就是我' }
+  ]
+};
+
 const sandbox = {
   console,
   setTimeout,
@@ -130,18 +145,10 @@ const sandbox = {
     scrollTo() {},
     addEventListener() {},
     CLJ_CONFIG: { BRAND: '长留玉' },
-    CLJ_DATA: {
-      DEFAULT_VERSION: 'light',
-      VERSIONS: { light: { label: '精简版', badge: '30题' } },
-      normalizeVersion: v => v,
-      questions: () => questions
-    },
-    CLJ_SCORING: {
-      OPTIONS: [
-        { value: 1, label: '完全不这样' }, { value: 2, label: '不太这样' },
-        { value: 3, label: '说不好' }, { value: 4, label: '比较像' }, { value: 5, label: '这就是我' }
-      ]
-    },
+    CLJ_DATA: MOCK_DATA,
+    CLJ_SCORING: MOCK_SCORING,
+    /* 引擎现在靠 quiz-boot 注入数据源，这里补上同样的声明 */
+    CLJ_QUIZ: { data: MOCK_DATA, scoring: MOCK_SCORING, storePrefix: 'career', questionsDir: 'js/career/' },
     CLJ: CLJ
   }
 };
@@ -149,7 +156,7 @@ sandbox.window.window = sandbox.window;
 sandbox.window.document = sandbox.document;
 sandbox.window.navigator = sandbox.navigator;
 vm.createContext(sandbox);
-vm.runInContext(CODE, sandbox, { filename: 'test.js' });
+vm.runInContext(CODE, sandbox, { filename: 'quiz.js' });
 
 /* ------------------------------------------------------------
  * 断言
@@ -168,7 +175,7 @@ const nowIdx = () => Number(els['step-now'].textContent);
 const progress = () => store.get('career_progress') || {};
 
 (async () => {
-  console.log('\n=== 答题交互行为自检（假 DOM 跑真实 test.js）===\n');
+  console.log('\n=== 答题交互行为自检（假 DOM 跑真实答题引擎）===\n');
   console.log('  · 源码里的 ADVANCE_DELAY = ' + DELAY + 'ms（测试内临时改为 5ms 加速）\n');
 
   console.log('[1] 首次进入');

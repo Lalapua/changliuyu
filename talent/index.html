@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
   <meta name="theme-color" content="#0B0B0F">
-  <meta name="description" content="你适合什么样的职业 · 基于 RIASEC 职业兴趣模型的轻娱乐测试。仅供娱乐，不构成专业建议。">
-  <title>你适合什么样的职业｜长留玉</title>
+  <meta name="description" content="你的天赋是什么 · 基于加德纳多元智能的轻娱乐测试。仅供娱乐，不构成专业建议。">
+  <title>你的天赋是什么｜长留玉</title>
 
   <link rel="icon" href="../assets/ip.png">
   <link rel="apple-touch-icon" href="../assets/ip.png">
@@ -17,7 +17,7 @@
 
   <div class="app">
 
-    <!-- 顶部：返回 + 品牌（品牌处于不显眼位置） -->
+    <!-- 顶部：返回 + 品牌 -->
     <div class="quiz-top">
       <a class="quiz-top__back" href="../index.html">
         <span aria-hidden="true">←</span> 返回首页
@@ -34,11 +34,11 @@
       <section class="card card--tint intro-hero">
         <span data-clj-ip="lg"></span>
         <div class="grow">
-          <h1 class="intro-hero__title">你适合什么样的职业</h1>
+          <h1 class="intro-hero__title">你的天赋是什么</h1>
           <div class="intro-hero__meta">
-            <span class="chip">RIASEC 模型</span>
-            <span class="chip chip--plain">6 个维度</span>
-            <span class="chip chip--plain" id="hero-badge">精简版</span>
+            <span class="chip">多元智能模型</span>
+            <span class="chip chip--plain">8 个维度</span>
+            <span class="chip chip--plain" id="hero-badge">轻量版</span>
           </div>
         </div>
       </section>
@@ -51,7 +51,7 @@
         <div class="intro-points">
           <div class="intro-points__item">
             <span class="intro-points__idx t-num">01</span>
-            <span>每题五个档位，从「完全不这样」到「这简直就是我」，选最像你的那个，不用纠结。</span>
+            <span>每题五个档位，从「完全不这样」到「这简直就是我」。这些题问的是你平时的做法，不是让你评价自己有多强。</span>
           </div>
           <div class="intro-points__item">
             <span class="intro-points__idx t-num">02</span>
@@ -59,7 +59,7 @@
           </div>
           <div class="intro-points__item">
             <span class="intro-points__idx t-num">03</span>
-            <span>答完会算出你的六个维度分，并从一百多个职业里挑出最匹配的几个。</span>
+            <span>答完会算出八项能力的分值，指出你最强的那几项，还会告诉你和你最像的名人。</span>
           </div>
         </div>
       </section>
@@ -68,7 +68,7 @@
       <section class="card stack-2">
         <div class="section-head">
           <h2 class="section-head__title">选择版本</h2>
-          <span class="section-head__hint">两版共用同一套职业库</span>
+          <span class="section-head__hint">两版共用同一套画像</span>
         </div>
         <div class="version-list" id="version-list"></div>
         <p class="t-small" id="resume-tip" hidden></p>
@@ -96,14 +96,13 @@
 
   <script src="../js/config.js"></script>
   <script src="../js/global.js"></script>
-  <script src="../js/career/questions-light.js"></script>
-  <script src="../js/career/questions-full-part1.js"></script>
-  <script src="../js/career/questions-full-part2.js"></script>
-  <script src="../js/career/questions-full-part3.js"></script>
-  <script src="../js/career/questions-full-part4.js"></script>
-  <script src="../js/career/scoring.js"></script>
-  <script src="../js/career/data.js"></script>
-  <script src="../js/career/quiz-boot.js"></script>
+  <script src="../js/talent/questions-light.js"></script>
+  <script src="../js/talent/questions-full.js"></script>
+  <script src="../js/talent/scoring.js"></script>
+  <script src="../js/talent/talents.js"></script>
+  <script src="../js/talent/figures.js"></script>
+  <script src="../js/talent/data.js"></script>
+  <script src="../js/talent/quiz-boot.js"></script>
   <script src="../js/start.js"></script>
 </body>
 </html>

@@ -75,31 +75,52 @@ npx serve .
 │   ├── home.js                    首页逻辑：渲染模块卡片
 │   ├── module.js                  模块列表页逻辑：渲染模块下的条目卡片
 │   ├── qr.js                      零依赖二维码编码器（结果图片里那个码）
-│   ├── poster.js                  ★ 结果海报渲染器（两个测试共用）
-│   │                              调用方只交一份「内容描述」，画布细节都在这里
-│   ├── career/
+│   │
+│   │   ↓↓↓ 以下五个是**两个测试共用**的，加第三个测试时都不用动 ↓↓↓
+│   ├── quiz.js                    ★ 答题引擎（进度、自动跳题、上下题、存档）
+│   ├── start.js                   ★ 开始页逻辑（选版本、续上次进度）
+│   ├── radar.js                   ★ 雷达图 SVG 生成器（轴数可变，六轴八轴通吃）
+│   ├── poster.js                  ★ 结果海报渲染器（调用方只交一份「内容描述」）
+│   ├── save.js                    ★ 出图与交付（验证可导出 → 系统分享 → 下载 → 长按保存）
+│   │
+│   ├── career/                    职业测试 · 数据与页面逻辑
 │   │   ├── questions-light.js     精简版题库（30 题）
 │   │   ├── questions-full-part1.js ~ part4.js   全量版题库（120 题，每份 30 题）
 │   │   ├── careers-part1.js ~ part4.js          职业库（108 个，每份 27 个）
 │   │   ├── scoring.js             ★ 计分、双轴匹配、点评文案池
 │   │   ├── data.js                数据访问层 + 数据自检
-│   │   ├── start.js               开始页逻辑（选版本）
-│       ├── test.js                答题页逻辑（进度、上下题、存档）
-│       └── result.js              结果页逻辑（渲染 + 分享图）
+│   │   ├── quiz-boot.js           数据源声明：告诉公共引擎用哪套数据、存档键叫什么
+│   │   └── result.js              结果页逻辑（渲染 + 拼海报内容）
+│   └── talent/                    天赋测试 · 数据与页面逻辑
+│       ├── questions-light.js     轻量版题库（40 题，每维 5 题）
+│       ├── questions-full.js      全量版补充（40 题，全量版 = 轻量版 + 这份）
+│       ├── scoring.js             ★ 八维计分、持平判定、名人匹配
+│       ├── talents.js             八张天赋画像
+│       ├── figures.js             「和你最像的名人」库（32 位）
+│       ├── data.js                数据访问层 + 数据自检
+│       ├── quiz-boot.js           数据源声明
+│       └── result.js              结果页逻辑
 ├── tests/
 │   └── index.html                 测试模块列表页（data-clj-module="tests"）
 ├── games/
 │   └── index.html                 小游戏模块列表页（data-clj-module="games"）
-├── career/
-│   ├── index.html                 职业测试开始页
+├── career/                        职业测试三个页面壳
+│   ├── index.html                 开始页
 │   ├── test.html                  答题页
 │   └── result.html                结果页
+├── talent/                        天赋测试三个页面壳（结构同 career）
+│   ├── index.html
+│   ├── test.html
+│   └── result.html
 ├── tools/
 │   ├── preview-server.js          本地预览服务器（Node 运行，不参与线上）
 │   ├── list-careers.js            生成 CAREERS.md（职业库权重总表）
 │   ├── explain-match.js           算法追踪器：逐步打印维度→职业的中间量
+│   ├── review-talent.html         天赋测试内容审阅页（校对题目与画像用，不参与线上）
 │   ├── verify-qr.js               二维码自检：独立解码器还原 + 可选与参考库比对
 │   ├── verify-poster.js           结果图片端到端：从画布像素里抠出二维码逐格比对
+│   ├── verify-talent.js           天赋数据与算法自检（题库/画像/名人/持平阈值）
+│   ├── verify-talent-page.js      天赋测试端到端（开始页→答题→结果两条分支）
 │   ├── verify-data.js             数据自检：题库/职业库/计分匹配/点评文案池
 │   ├── verify-quiz.js             交互自检：自动跳题/回退/末题确认/存档
 │   └── verify-pages.js            页面自检：语法/引用/DOM id/脚本顺序/模块清单

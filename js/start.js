@@ -1,18 +1,29 @@
 /* ============================================================
- * 长留玉 · 职业测试 · 开始页逻辑
+ * 长留玉 · 开始页逻辑（公共模块，两个测试共用）
  * ------------------------------------------------------------
- * 职责：选择版本（精简 30 题 / 全量 120 题）、显示上次进度、
- *      跳转到答题页。
+ * 职责：选择版本、显示上次进度、跳转到答题页。
+ * 和答题引擎一样，它不认识任何具体测试 —— 数据源与存储键前缀
+ * 都从页面上先引入的 quiz-boot.js 里读（window.CLJ_QUIZ）。
  * ============================================================ */
 (function () {
   'use strict';
 
   var CFG = window.CLJ_CONFIG;
-  var DATA = window.CLJ_DATA;
+  var BOOT = window.CLJ_QUIZ || {};
+  var DATA = BOOT.data;
   var CLJ = window.CLJ;
 
-  var KEY_PROGRESS = 'career_progress';
-  var KEY_VERSION = 'career_version';
+  if (!DATA) {
+    if (window.console && console.error) {
+      console.error('[长留玉] 开始页缺少数据源。页面里要在本文件之前引入该测试的 quiz-boot.js。');
+    }
+    return;
+  }
+
+  var PREFIX = BOOT.storePrefix || 'quiz';
+  var KEY_PROGRESS = PREFIX + '_progress';
+  var KEY_VERSION = PREFIX + '_version';
+  var TEST_NAME = BOOT.testName || '测试';
 
   var current = DATA.DEFAULT_VERSION;
 
@@ -86,7 +97,7 @@
     current = DATA.normalizeVersion(CLJ.store.get(KEY_VERSION, DATA.DEFAULT_VERSION));
 
     var v = DATA.VERSIONS[current];
-    document.title = '你适合什么样的职业' + CFG.SHARE_TITLE_SUFFIX;
+    document.title = TEST_NAME + CFG.SHARE_TITLE_SUFFIX;
 
     var badge = CLJ.qs('#hero-badge');
     if (badge) badge.textContent = v.label + ' · ' + v.badge;

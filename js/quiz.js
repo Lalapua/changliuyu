@@ -1,6 +1,10 @@
 /* ============================================================
- * 长留玉 · 职业测试 · 答题页逻辑
+ * 长留玉 · 答题页引擎（公共模块，两个测试共用）
  * ------------------------------------------------------------
+ * 这个文件不认识任何具体的测试 —— 题目从哪儿来、分值怎么算、
+ * 存档键叫什么，全部由页面上先引入的 quiz-boot.js 注入（见下方）。
+ * 加第三个测试时不需要碰它。
+ *
  * 交互规则（硬性要求）：
  *   1. 选中一项后自动跳到下一题，无需再点「下一题」；
  *      但延后一小会儿再跳，留出时间让用户看清自己选了什么；
@@ -12,14 +16,36 @@
 (function () {
   'use strict';
 
-  var CFG = window.CLJ_CONFIG;
-  var DATA = window.CLJ_DATA;
-  var S = window.CLJ_SCORING;
+  /* ------------------------------------------------------------
+   * 数据源：由每个测试自己的 quiz-boot.js 注入
+   * ------------------------------------------------------------
+   * 页面里的脚本顺序必须是：
+   *   config.js → global.js → <测试的题库/画像库> → <测试的 scoring.js>
+   *   → <测试的 quiz-boot.js> → 本文件
+   * quiz-boot.js 只做一件事：把 window.CLJ_QUIZ 指到这套数据上，
+   * 并声明自己的存储键前缀。这样同一个引擎能服务多个测试，
+   * 加测试时不用复制这份答题逻辑。
+   * ---------------------------------------------------------- */
+  var BOOT = window.CLJ_QUIZ || {};
+  var DATA = BOOT.data;
+  var S = BOOT.scoring;
   var CLJ = window.CLJ;
+  var CFG = window.CLJ_CONFIG;
 
-  var KEY_PROGRESS = 'career_progress';   // 进行中的进度
-  var KEY_FINAL = 'career_final';         // 完成后的答案快照
-  var KEY_VERSION = 'career_version';     // 用户上次选择的版本
+  if (!DATA || !S) {
+    /* 少了 boot 就什么都做不了，说清楚缺哪一步，别留一句莫名其妙的报错 */
+    if (window.console && console.error) {
+      console.error('[长留玉] 答题引擎缺少数据源。页面里要在本文件之前引入 ' +
+        '该测试的 quiz-boot.js（它负责设置 window.CLJ_QUIZ）。');
+    }
+    return;
+  }
+
+  var PREFIX = BOOT.storePrefix || 'quiz';
+  var KEY_PROGRESS = PREFIX + '_progress';   // 进行中的进度
+  var KEY_FINAL = PREFIX + '_final';         // 完成后的答案快照
+  var KEY_VERSION = PREFIX + '_version';     // 用户上次选择的版本
+  var QUESTIONS_DIR = BOOT.questionsDir || '';   // 只在「题库没加载」的报错里用
 
   /* 选中后自动跳题的延迟(ms)。
    * 不能设成 0：得先让选中高亮显出来，用户才看得清自己选了什么。
@@ -306,7 +332,7 @@
 
     if (!state.questions.length) {
       els.qText.textContent = '题库加载失败了';
-      els.qMeta.textContent = '请检查 js/career/ 下的题库文件是否已正确引入。';
+      els.qMeta.textContent = '请检查 ' + QUESTIONS_DIR + ' 下的题库文件是否已正确引入。';
       els.next.disabled = true;
       els.prev.disabled = true;
       return;

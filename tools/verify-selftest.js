@@ -207,7 +207,7 @@ window.__REPORT = { steps: 0, finalBtn: '', hint: '', legal: '' };
 </script>
 `;
   const RES_TAIL = TAIL.replace('window.__REPORT || {}',
-    '({ label: (document.getElementById("code-label")||{}).textContent, code: (document.getElementById("result-code")||{}).textContent, dims: document.querySelectorAll("#dim-bars .dim-row").length, radar: document.querySelectorAll("#radar-holder svg polygon").length, careers: document.querySelectorAll("#career-main .career-card, #career-alt .career-alt").length, saveBtn: !!document.getElementById("btn-save-img"), shareBtn: !!document.getElementById("btn-share"), copyBtn: !!document.getElementById("btn-copy"), others: document.querySelectorAll("#other-tests .mini-test").length })');
+    '({ label: (document.getElementById("code-label")||{}).textContent, code: (document.getElementById("result-code")||{}).textContent, dims: document.querySelectorAll("#dim-bars .dim-row").length, radar: document.querySelectorAll("#radar-holder svg polygon").length, careers: document.querySelectorAll("#career-main .result-card, #result-alt .result-alt").length, saveBtn: !!document.getElementById("btn-save-img"), shareBtn: !!document.getElementById("btn-share"), copyBtn: !!document.getElementById("btn-copy"), others: document.querySelectorAll("#other-tests .mini-test").length })');
   /* 种子必须插在 result.js 之前（data.js 已加载、result.js 还没跑），塞 <head> 会撞 CLJ_DATA 未定义 */
   function makeResultProbe(seedCode, outRel) {
     let src = fs.readFileSync(path.join(ROOT, 'career/result.html'), 'utf8');

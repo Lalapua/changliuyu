@@ -84,9 +84,9 @@
           { id: 'career', name: '你适合什么样的职业', subtitle: 'RIASEC 职业兴趣模型',
             intro: '六个维度、上百个职业，算出你最像哪一类职业人。', path: 'career/',
             count: '30 / 120 题', minutes: '约 3 / 12 分钟', online: true, accent: 'violet' },
-          { id: 'talent', name: '你的天赋是什么', subtitle: '即将上线',
+          { id: 'talent', name: '你的天赋是什么', subtitle: '加德纳多元智能',
             intro: '有些能力你以为人人都会，其实那是别人没有的。', path: 'talent/',
-            count: '40 题', minutes: '约 5 分钟', online: false, accent: 'cyan' },
+            count: '40 / 80 题', minutes: '约 5 / 10 分钟', online: true, accent: 'cyan' },
           { id: 'reserved-1', name: '待定测试位', subtitle: '即将上线',
             intro: '复制 career 目录即可在这里挂上新的测试。', path: 'reserved-1/',
             count: '待定', minutes: '待定', online: false, accent: 'amber' }
